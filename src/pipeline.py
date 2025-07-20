@@ -518,9 +518,23 @@ def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
 # Define functions related to the clustering part of the pipeline ----------------------------------
 
 
-def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str):
+def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> pd.DataFrame:
     """
     Runs the data scaling, dimensionality reduction, and clustering part of the pipeline.
+
+    Parameters:
+    -----------
+    df: pd.DataFrame
+        The DataFrame containing the merged crime, weather, and census data.
+    start_str: str
+        The start date of the data collection period in 'YYYY-MM-DD' format.
+    end_str: str
+        The end date of the data collection period in 'YYYY-MM-DD' format.
+
+    Returns:
+    --------
+    pd.DataFrame
+        The DataFrame with cluster labels added, saved to a file.
     """
     print("Starting clustering part of the pipeline...")
 
@@ -545,19 +559,27 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str):
     ]
     df_umap_ready = df.drop(columns=columns_to_drop)
 
-    # Initialize UMAP. Sticking with static parameters for now.
+    # Embed with UMAP. Sticking with static parameters for now.
     reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, random_state=42)
     df_embedding = reducer.fit_transform(df_umap_ready).astype("float64")
 
     # Apply HDBSCAN to cluster the embedded data.
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=10000, min_samples=40, gen_min_span_tree=True)
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=5000, min_samples=40, gen_min_span_tree=True)
     clusterer.fit(df_embedding)
 
     # Add the cluster labels back to the original dataframe.
     df["cluster_label"] = clusterer.labels_
 
+    # Calculate and print the custom score (ideally used for MLFlow later if possible...)
+    labels = clusterer.labels_
+    dbcv_score = clusterer.relative_validity_
+    noise_prop = np.sum(labels == -1) / len(labels)
+    num_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+    custom_score = (dbcv_score - noise_prop) - (0.1 * np.log1p(num_clusters))
+    print(f"Clustering complete with custom score: {custom_score:.4f}, ")
+
     # Save the final labeled data.
-    output_path = f"data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
+    output_path = f"..data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
     df.to_pickle(output_path)
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
@@ -572,16 +594,14 @@ def main():
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
-    # --- Part 1: Data Retrieval and Merging ---
+    # Part 1: Data Retrieval and Merging -----------------------------------------------------------
+    print("Starting data retrieval and merging...")
+    # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(CRIME_TABLE_NAME, START_STR, END_STR, CARTO_URL)
     crime_df = clean_crime_data(crime_df)
-
-    # Note on weather data: Originally wanted to use multiple stations, but simplified
-    # to one due to API limitations. This should still be relatively accurate for a small region.
     weather_df = clean_weather_data(
         fetch_weather_data(WEATHER_STATION_ID, START_STR, END_STR, NOAA_TOKEN, WEATHER_URL)
     )
-
     census_df = clean_census_data(
         fetch_census_data(PA_STATE_FIPS, PHILLY_COUNTY_FIPS, CENSUS_TOKEN, CENSUS_API_URL)
     )
@@ -593,7 +613,7 @@ def main():
     # Perform spatial join to map crimes to census tracts
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
 
-    # Now, all three datasets are ready to be merged together
+    # Merge all the data together
     print("Merging crime, weather, and census data...")
     merged_df = pd.merge(
         final_crime_data, weather_df, left_on="dispatch_date_dt", right_on="date_dt", how="left"
@@ -610,7 +630,7 @@ def main():
     final_merged_df = merged_df.dropna()
     assert final_merged_df.isna().sum().sum() == 0, "Error: Missing values were found!"
 
-    # --- Part 2: Clustering ---
+    # Part 2: Clustering
     run_clustering_pipeline(final_merged_df, START_STR, END_STR)
 
 
