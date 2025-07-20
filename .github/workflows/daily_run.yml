@@ -1,0 +1,43 @@
+name: Daily Data Pipeline
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs every day at midnight UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install GDAL for Geopandas
+        run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Set up Git LFS
+        run: git lfs install
+
+      - name: Run the data pipeline
+        env:
+          NOAA_TOKEN: ${{ secrets.NOAA_TOKEN }}
+          CENSUS_TOKEN: ${{ secrets.CENSUS_TOKEN }}
+        run: python src/pipeline.py
+
+      - name: Commit and push the new data file
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/
+          git commit -m "Automated daily data update" || echo "No changes to commit"
+          git push
