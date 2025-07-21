@@ -594,17 +594,54 @@ def main():
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
-    # Part 1: Data Retrieval and Merging -----------------------------------------------------------
+    # Part 1: Data Retrieval and Merging
     print("Starting data retrieval and merging...")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(CRIME_TABLE_NAME, START_STR, END_STR, CARTO_URL)
     crime_df = clean_crime_data(crime_df)
-    weather_df = clean_weather_data(
-        fetch_weather_data(WEATHER_STATION_ID, START_STR, END_STR, NOAA_TOKEN, WEATHER_URL)
-    )
-    census_df = clean_census_data(
-        fetch_census_data(PA_STATE_FIPS, PHILLY_COUNTY_FIPS, CENSUS_TOKEN, CENSUS_API_URL)
-    )
+
+    # Initialize an empty list to hold the weather DataFrames for each year
+    weather_frames = []
+    # Calculate the years within your 3-year date range
+    start_year = START_DATE.year
+    end_year = END_DATE.year
+
+    # Loop through each year in the range and fetch the weather data
+    for year in range(start_year, end_year + 1):
+        # Define the start and end for this specific year's API call
+        year_start_str = f"{year}-01-01"
+        year_end_str = f"{year}-12-31"
+        print(f"-> Downloading weather for year {year}...")
+        df_year = fetch_weather_data(
+            station_id=WEATHER_STATION_ID,
+            start_date=year_start_str,
+            end_date=year_end_str,
+            token=NOAA_TOKEN,
+            WEATHER_URL=WEATHER_URL,
+        )
+
+        if not df_year.empty:
+            weather_frames.append(df_year)
+
+    # If I successfully downloaded data for any year, combine them into a single DataFrame
+    if weather_frames:
+        # Combine the data from all successful yearly calls
+        weather_df = pd.concat(weather_frames, ignore_index=True)
+        # Filter the combined data to the precise 3-year rolling window
+        weather_df["date_dt_obj"] = pd.to_datetime(weather_df["date_dt"])
+        weather_df = weather_df[
+            (weather_df["date_dt_obj"] >= pd.to_datetime(START_STR))
+            & (weather_df["date_dt_obj"] <= pd.to_datetime(END_STR))
+        ].drop(columns=["date_dt_obj"])
+        print(f"\n Successfully combined weather data for {len(weather_df)} days.")
+    else:
+        print("\n No weather data could be downloaded.")
+        weather_df = pd.DataFrame()
+
+    weather_df = clean_weather_data(weather_df)
+
+    census_df = fetch_census_data(PA_STATE_FIPS, PHILLY_COUNTY_FIPS, CENSUS_TOKEN, CENSUS_API_URL)
+    census_df = clean_census_data(census_df)
 
     # To properly map census data, I need to determine which tract each crime is in.
     # This uses a geojson file that outlines each census tract in Philadelphia.
