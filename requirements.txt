@@ -1,0 +1,7 @@
+pandas
+geopandas
+requests
+numpy
+scikit-learn
+umap-learn
+hdbscan
