@@ -118,7 +118,9 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     # Convert relevant columns to datetime
     crime_df["dispatch_date_dt"] = pd.to_datetime(crime_df["dispatch_date"]).dt.date
     crime_df["dispatch_date"] = pd.to_datetime(crime_df["dispatch_date"])
-    crime_df["dispatch_time"] = pd.to_datetime(crime_df["dispatch_time"], errors="coerce")
+    crime_df["dispatch_time"] = pd.to_datetime(
+        crime_df["dispatch_time"], format="%H:%M:%S", errors="coerce"
+    )
 
     # Extract hour from dispatch_time; while the original dataframe had an hour column, it had
     # missing values
