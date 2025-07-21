@@ -28,6 +28,9 @@ jobs:
       - name: Set up Git LFS
         run: git lfs install
 
+      - name: Create data directory
+        run: mkdir -p data
+
       - name: Run the data pipeline
         env:
           NOAA_TOKEN: ${{ secrets.NOAA_TOKEN }}
