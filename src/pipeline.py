@@ -143,7 +143,7 @@ def fetch_weather_data(
     start_date: str,
     end_date: str,
     token: str,
-    weather_url: str,
+    WEATHER_URL: str,
     max_retries: int = 5,
 ) -> pd.DataFrame:
     """
@@ -579,7 +579,7 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     print(f"Clustering complete with custom score: {custom_score:.4f}, ")
 
     # Save the final labeled data.
-    output_path = f"..data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
+    output_path = f"data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
     df.to_pickle(output_path)
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
