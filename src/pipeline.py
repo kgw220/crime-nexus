@@ -7,14 +7,19 @@ is setup!
 
 import geopandas as gpd
 import hdbscan
+import mlflow
 import numpy as np
 import os
 import pandas as pd
+import random
 import requests
+import random
 import time
 import umap
 
 from datetime import datetime, timedelta
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
 # Import configuration constants and API tokens, as defined in config.py in the same directory
@@ -31,6 +36,11 @@ from config import (
     CENSUS_SHAPE_URL,
     PROBABILITY_THRESHOLD,
 )
+
+
+# Set the number of evaluations the TPE algorithm will perform
+NUM_EXPERIMENT_EVALS = 50
+
 
 # Functions to fetch and clean data ----------------------------------------------------------------
 
@@ -618,6 +628,183 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
 
+def run_tpe_search(df: pd.DataFrame, max_evals: int):
+    """
+    Runs a hyperparameter search using Hyperopt's TPE algorithm, logging results to MLFlow.
+    """
+    print(f"Starting hyperparameter search for {max_evals} evaluations using TPE...")
+
+    # Prepare data for clustering (done once)
+    scaler = StandardScaler()
+    scaler.set_output(transform="pandas")
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
+    df_scaled = df.copy()
+    df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
+    columns_to_drop = [
+        "dispatch_date",
+        "dispatch_time",
+        "address_block",
+        "dispatch_date_dt",
+        "geometry",
+        "tract_id",
+    ]
+    df_umap_ready = df_scaled.drop(columns=columns_to_drop)
+
+    # Define the Hyperopt Search Space
+    space = {
+        "n_neighbors": hp.quniform("n_neighbors", 10, 150, 1),
+        "min_dist": hp.uniform("min_dist", 0.0, 0.5),
+        "n_components": hp.quniform("n_components", 5, 50, 1),
+        "min_cluster_size": hp.quniform("min_cluster_size", 500, 10000, 100),
+        "min_samples": hp.quniform("min_samples", 5, 200, 5),
+    }
+
+    # Define the Objective Function for Hyperopt
+    def objective(params):
+        """
+        Objective function for Hyperopt to minimize. It runs the clustering pipeline
+        and returns the negative of the custom score, logging everything to MLFlow.
+        """
+        params["n_neighbors"] = int(params["n_neighbors"])
+        params["n_components"] = int(params["n_components"])
+        params["min_cluster_size"] = int(params["min_cluster_size"])
+        params["min_samples"] = int(params["min_samples"])
+
+        with mlflow.start_run():
+            print(f"\n--- Evaluating parameters: {params} ---")
+            mlflow.log_params(params)
+
+            umap_params = {
+                "n_neighbors": params["n_neighbors"],
+                "min_dist": params["min_dist"],
+                "n_components": params["n_components"],
+                "random_state": 42,
+            }
+            hdbscan_params = {
+                "min_cluster_size": params["min_cluster_size"],
+                "min_samples": params["min_samples"],
+                "gen_min_span_tree": True,
+            }
+
+            reducer = umap.UMAP(**umap_params)
+            df_embedding = reducer.fit_transform(df_umap_ready).astype("float64")
+            clusterer = hdbscan.HDBSCAN(**hdbscan_params)
+            clusterer.fit(df_embedding)
+
+            labels = clusterer.labels_
+            dbcv_score = clusterer.relative_validity_
+            noise_prop = np.sum(labels == -1) / len(labels) if len(labels) > 0 else 1.0
+            num_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+            custom_score = (dbcv_score - noise_prop) - (0.1 * np.log1p(num_clusters))
+
+            print(f"-> Trial complete. Custom Score: {custom_score:.4f}")
+            mlflow.log_metric("custom_score", custom_score)
+            mlflow.log_metric("dbcv_score", dbcv_score)
+            mlflow.log_metric("noise_proportion", noise_prop)
+            mlflow.log_metric("num_clusters", num_clusters)
+
+            return {"loss": -custom_score, "status": STATUS_OK}
+
+    # Run the TPE Optimization
+    trials = Trials()
+    rstate = np.random.default_rng(42)
+
+    fmin(
+        fn=objective,
+        space=space,
+        algo=tpe.suggest,
+        max_evals=max_evals,
+        trials=trials,
+        rstate=rstate,
+    )
+
+
+def get_best_run_parameters(experiment_id: str) -> dict:
+    """
+    Queries MLFlow to find the best run from the experiment and returns its parameters.
+    """
+    print("\nFinding best run from MLFlow experiment...")
+    best_run = mlflow.search_runs(
+        experiment_ids=[experiment_id],
+        order_by=["metrics.custom_score DESC"],
+        max_results=1,
+    )
+
+    if best_run.empty:
+        raise Exception("No runs found in the experiment. Cannot determine best parameters.")
+
+    best_params = best_run.filter(regex="params\..*").to_dict("records")[0]
+    best_params = {key.replace("params.", ""): value for key, value in best_params.items()}
+
+    print(f"Best parameters found: {best_params}")
+    return best_params
+
+
+def run_final_pipeline(df: pd.DataFrame, best_params: dict, start_str: str, end_str: str):
+    """
+    Runs the clustering pipeline with the best hyperparameters and saves the final output.
+    """
+    print("\nRunning final pipeline with best hyperparameters...")
+
+    scaler = StandardScaler()
+    scaler.set_output(transform="pandas")
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
+    df_scaled = df.copy()
+    df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
+    columns_to_drop = [
+        "dispatch_date",
+        "dispatch_time",
+        "address_block",
+        "dispatch_date_dt",
+        "geometry",
+        "tract_id",
+    ]
+    df_umap_ready = df_scaled.drop(columns=columns_to_drop)
+
+    umap_params = {
+        "n_neighbors": int(float(best_params["n_neighbors"])),
+        "min_dist": float(best_params["min_dist"]),
+        "n_components": int(float(best_params["n_components"])),
+        "random_state": 42,
+    }
+    hdbscan_params = {
+        "min_cluster_size": int(float(best_params["min_cluster_size"])),
+        "min_samples": int(float(best_params["min_samples"])),
+        "prediction_data": True,
+    }
+
+    reducer = umap.UMAP(**umap_params)
+    df_embedding = reducer.fit_transform(df_umap_ready).astype("float64")
+    clusterer = hdbscan.HDBSCAN(**hdbscan_params)
+    clusterer.fit(df_embedding)
+
+    df["cluster_label"] = clusterer.labels_
+
+    labels = clusterer.labels_
+    probs = clusterer.probabilities_
+    prob_df = pd.DataFrame({"label": labels, "probability": probs})
+    prob_df = prob_df[prob_df["label"] != -1]
+
+    if not prob_df.empty:
+        mean_probs = prob_df.groupby("label")["probability"].mean()
+        high_quality_clusters = mean_probs[mean_probs > PROBABILITY_THRESHOLD]
+        df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
+
+        print(f"\nFiltered final data to {len(df_high_quality)} points in high-quality clusters.")
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        data_dir = os.path.join(base_dir, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        output_path = os.path.join(data_dir, f"labeled_merged_data_{start_str}_to_{end_str}.pkl")
+
+        df_high_quality.to_pickle(output_path)
+        print(f"Final clustered data saved to {output_path}")
+    else:
+        print("No high-quality clusters found in the final run.")
+
+
 def main():
     """
     Main function to run the entire data pipeline from fetching to clustering.
@@ -728,7 +915,24 @@ def main():
     print(f"Daily merged data saved to {output_path}")
 
     # Part 2: Clustering- --------------------------------------------------------------------------
-    run_clustering_pipeline(final_merged_df, START_STR, END_STR)
+    mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if not mlflow_tracking_uri:
+        raise ValueError("MLFLOW_TRACKING_URI environment variable not set!")
+
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
+    experiment_name = "Daily Crime Clustering"
+    mlflow.set_experiment(experiment_name)
+
+    # Run the TPE hyperparameter search
+    run_tpe_search(final_merged_df, NUM_EXPERIMENT_EVALS)
+
+    # Get the best parameters from the experiment
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    best_params = get_best_run_parameters(experiment.experiment_id)
+
+    # Run the final pipeline with the best parameters
+    run_final_pipeline(final_merged_df, best_params, START_STR, END_STR)
+    # run_clustering_pipeline(final_merged_df, START_STR, END_STR)
 
 
 if __name__ == "__main__":
