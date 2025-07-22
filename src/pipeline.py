@@ -16,6 +16,7 @@ import requests
 import random
 import time
 import umap
+import uuid
 
 from datetime import datetime, timedelta
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
@@ -628,7 +629,7 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
 
-def run_tpe_search(df: pd.DataFrame, max_evals: int):
+def run_tpe_search(df: pd.DataFrame, max_evals: int, pipeline_run_id: str):
     """
     Runs a hyperparameter search using Hyperopt's TPE algorithm, logging results to MLFlow.
     """
@@ -653,11 +654,11 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int):
 
     # Define the Hyperopt Search Space
     space = {
-        "n_neighbors": hp.quniform("n_neighbors", 10, 150, 1),
+        "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
         "min_dist": hp.uniform("min_dist", 0.0, 0.5),
         "n_components": hp.quniform("n_components", 5, 50, 1),
-        "min_cluster_size": hp.quniform("min_cluster_size", 500, 10000, 100),
-        "min_samples": hp.quniform("min_samples", 5, 200, 5),
+        "min_cluster_size": hp.quniform("min_cluster_size", 4000, 6000, 100),
+        "min_samples": hp.quniform("min_samples", 10, 200, 5),
     }
 
     # Define the Objective Function for Hyperopt
@@ -672,6 +673,10 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int):
         params["min_samples"] = int(params["min_samples"])
 
         with mlflow.start_run():
+
+            # Tag the run with the unique pipeline execution ID
+            mlflow.set_tag("pipeline_run_id", pipeline_run_id)
+
             print(f"\n--- Evaluating parameters: {params} ---")
             mlflow.log_params(params)
 
@@ -720,13 +725,17 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int):
     )
 
 
-def get_best_run_parameters(experiment_id: str) -> dict:
+def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     """
     Queries MLFlow to find the best run from the experiment and returns its parameters.
     """
-    print("\nFinding best run from MLFlow experiment...")
+    print("\nFinding best run from today's runs...")
+
+    # Filter runs by the unique pipeline_run_id tag
+    filter_string = f"tags.pipeline_run_id = '{pipeline_run_id}'"
     best_run = mlflow.search_runs(
         experiment_ids=[experiment_id],
+        filter_string=filter_string,
         order_by=["metrics.custom_score DESC"],
         max_results=1,
     )
@@ -923,12 +932,15 @@ def main():
     experiment_name = "/Users/kevingrahamwu@gmail.com/Daily_Crime_Clustering"
     mlflow.set_experiment(experiment_name)
 
+    # reate a unique ID for this specific pipeline execution
+    pipeline_run_id = str(uuid.uuid4())
+
     # Run the TPE hyperparameter search
-    run_tpe_search(final_merged_df, NUM_EXPERIMENT_EVALS)
+    run_tpe_search(final_merged_df, NUM_EXPERIMENT_EVALS, pipeline_run_id)
 
     # Get the best parameters from the experiment
     experiment = mlflow.get_experiment_by_name(experiment_name)
-    best_params = get_best_run_parameters(experiment.experiment_id)
+    best_params = get_best_run_parameters(experiment.experiment_id, pipeline_run_id)
 
     # Run the final pipeline with the best parameters
     run_final_pipeline(final_merged_df, best_params, START_STR, END_STR)

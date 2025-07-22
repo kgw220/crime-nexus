@@ -7,3 +7,4 @@ umap-learn
 hdbscan
 mlflow
 hyperopt
+uuid
