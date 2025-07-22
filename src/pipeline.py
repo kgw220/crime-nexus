@@ -602,9 +602,22 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
     print(f"\nFiltered data to {len(df_high_quality)} points belonging to high-quality clusters.")
 
-    # Save the final labeled data
-    output_path = f"../../data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
+    df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
+    print(f"\nFiltered data to {len(df_high_quality)} points belonging to high-quality clusters.")
+
+    # Save the labeled data to a file in the data directory
+
+    # Define the base directory (project root) relative to this script's location (src/)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Define the full path to the data directory
+    data_dir = os.path.join(base_dir, "data")
+    # Create the data directory if it does not already exist
+    os.makedirs(data_dir, exist_ok=True)
+    # Construct the full output path for the clustered data file.
+    output_path = os.path.join(data_dir, f"labeled_merged_data_{start_str}_to_{end_str}.pkl")
+
     df_high_quality.to_pickle(output_path)
+
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
 
@@ -697,15 +710,25 @@ def main():
     print(merged_df.info())
 
     # Save the data from 2 days ago from the end date
+    two_days_ago_date = (END_DATE - timedelta(days=2)).date()
     data_2_days_ago = final_merged_df[
-        final_merged_df["dispatch_date_dt"] >= (END_DATE - timedelta(days=2)).date()
-    ]
+        final_merged_df["dispatch_date_dt"] >= two_days_ago_date
+    ].copy()
 
     print(data_2_days_ago.head())
     print(data_2_days_ago.info())
 
-    output_path = f"../../data/merged_data_{END_STR_2_DAYS_AGO}.pkl"
+    # Define the base directory (project root) and the data directory path
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(base_dir, "data")
+
+    # Create the directory if it doesn't exist
+    os.makedirs(data_dir, exist_ok=True)
+
+    # Construct the full output path and save the file
+    output_path = os.path.join(data_dir, f"merged_data_{END_STR_2_DAYS_AGO}.pkl")
     data_2_days_ago.to_pickle(output_path)
+    print(f"Daily merged data saved to {output_path}")
 
     # Part 2: Clustering- --------------------------------------------------------------------------
     run_clustering_pipeline(final_merged_df, START_STR, END_STR)
