@@ -1,50 +1,75 @@
 name: Daily Data Pipeline
 
+
 on:
   schedule:
-    - cron: '0 0 * * *'
+    # Run at 4:00 AM UTC every day (12:00 AM Eastern Time)
+    - cron: '0 4 * * *'
+  # Add a button in the GitHub UI to manually trigger this workflow when needed for testing
   workflow_dispatch:
 
+# Specify the actual job
 jobs:
   run-pipeline:
+    # The type of virtual machine to run the job on
     runs-on: ubuntu-latest
 
+    # Defines the permissions granted to the GITHUB_TOKEN for this job
     permissions:
+      # 'write' access is required for the action to commit files back to the repository.
       contents: write
     
     steps:
+      # Check out your repository's code onto the runner
       - name: Check out repository
-        uses: actions/checkout@v3
+        # 'uses' specifies that this step will run a pre-built action from the marketplace
+        uses: actions/checkout@v4 # Using the latest version for better performance and security
         with:
+          # 'fetch-depth: 0' fetches the entire git history. This is necessary
+          # to allow the action to commit and push changes
           fetch-depth: 0
 
+      # Set up the specified version of Python on the runner.
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Using the latest version
         with:
           python-version: '3.11'
 
+      # Install system-level dependencies. Geopandas requires GDAL
       - name: Install GDAL for Geopandas
         run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
 
+      # Install the Python libraries listed in your requirements.txt file
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       
+      # Set up Git Large File Storage (LFS) for handling large data files
       - name: Set up Git LFS
         run: git lfs install
 
+      # Create the 'data' directory if it doesn't already exist.
+      # The '-p' flag prevents errors if the directory is already there.
       - name: Create data directory
         run: mkdir -p data
 
+      # Execute the main Python pipeline script.
       - name: Run the data pipeline
+        # 'env' securely passes your GitHub secrets as environment variables to the script.
         env:
           NOAA_TOKEN: ${{ secrets.NOAA_TOKEN }}
           CENSUS_TOKEN: ${{ secrets.CENSUS_TOKEN }}
         run: python src/pipeline.py
 
+      # Commit the newly generated data files back to the repository.
       - name: Commit and push the new data file
         run: |
+          # Configure git with the bot's identity for the commit
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          # Add all files in the 'data/' directory to the staging area
+          # '-f' flag forces adding files
           git add -f data/
+          # Commit and push the changes
           git commit -m "Added HQ clustered data and copy of merged crime data from 3 days ago" || echo "No changes to commit"
+          # Push the changes to the repository's main branch.
           git push
