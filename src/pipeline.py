@@ -920,7 +920,7 @@ def main():
         raise ValueError("MLFLOW_TRACKING_URI environment variable not set!")
 
     mlflow.set_tracking_uri(mlflow_tracking_uri)
-    experiment_name = "Daily Crime Clustering"
+    experiment_name = "/Users/kevingrahamwu@gmail.com/Daily_Crime_Clustering"
     mlflow.set_experiment(experiment_name)
 
     # Run the TPE hyperparameter search
