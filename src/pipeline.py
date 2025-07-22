@@ -510,9 +510,6 @@ def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
 
     print("Population density calculated.")
 
-    # Display the new column to verify the result
-    print(merged_df[["tract_id", "pop_total", "land_area_sq_meters", "pop_density_sq_km"]].head())
-
     # Drop the land_area_sq_meters column as it's no longer needed
     merged_df = merged_df.drop(columns=["land_area_sq_meters"])
 
@@ -605,8 +602,8 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
     print(f"\nFiltered data to {len(df_high_quality)} points belonging to high-quality clusters.")
 
-    # Save the final labeled data.
-    output_path = f"..data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
+    # Save the final labeled data
+    output_path = f"../../data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
     df_high_quality.to_pickle(output_path)
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
@@ -622,7 +619,7 @@ def main():
     END_STR = END_DATE.strftime("%Y-%m-%d")
     END_STR_2_DAYS_AGO = (END_DATE - timedelta(2)).strftime("%Y-%m-%d")
 
-    # Part 1: Data Retrieval and Merging
+    # Part 1: Data Retrieval and Merging -----------------------------------------------------------
     print("Starting data retrieval and merging...")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(CRIME_TABLE_NAME, START_STR, END_STR, CARTO_URL)
@@ -695,14 +692,22 @@ def main():
     final_merged_df = merged_df.dropna()
     assert final_merged_df.isna().sum().sum() == 0, "Error: Missing values were found!"
 
+    # Print some information about the final merged DataFrame
+    print(merged_df.head())
+    print(merged_df.info())
+
     # Save the data from 2 days ago from the end date
     data_2_days_ago = final_merged_df[
         final_merged_df["dispatch_date_dt"] >= (END_DATE - timedelta(days=2)).date()
     ]
-    output_path = f"..data/merged_data_{END_STR_2_DAYS_AGO}.pkl"
+
+    print(data_2_days_ago.head())
+    print(data_2_days_ago.info())
+
+    output_path = f"../../data/merged_data_{END_STR_2_DAYS_AGO}.pkl"
     data_2_days_ago.to_pickle(output_path)
 
-    # Part 2: Clustering
+    # Part 2: Clustering- --------------------------------------------------------------------------
     run_clustering_pipeline(final_merged_df, START_STR, END_STR)
 
 
