@@ -40,7 +40,11 @@ from config import (
 
 
 # Set the number of evaluations the TPE algorithm will perform
-NUM_EXPERIMENT_EVALS = 50
+# NOTE: Ideally, this would be set higher, but each run takes several minutes to load, and GitHub
+# Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
+# lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
+# a paid tier
+NUM_EXPERIMENT_EVALS = 15
 
 
 # Functions to fetch and clean data ----------------------------------------------------------------
