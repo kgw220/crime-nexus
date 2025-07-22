@@ -602,9 +602,6 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
     print(f"\nFiltered data to {len(df_high_quality)} points belonging to high-quality clusters.")
 
-    df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
-    print(f"\nFiltered data to {len(df_high_quality)} points belonging to high-quality clusters.")
-
     # Save the labeled data to a file in the data directory
 
     # Define the base directory (project root) relative to this script's location (src/)
