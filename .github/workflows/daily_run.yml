@@ -47,6 +47,13 @@ jobs:
       - name: Set up Git LFS
         run: git lfs install
 
+        # Remove any pre-existing data files, as I only want to keep the latest data
+      - name: Clean old data files
+        run: |
+          # The '-f' flag forces deletion without prompting and prevents errors
+          # if the files don't exist
+          rm -f data/*.pkl || echo "No .pkl files to delete."
+
       # Create the 'data' directory if it doesn't already exist.
       # The '-p' flag prevents errors if the directory is already there.
       - name: Create data directory
