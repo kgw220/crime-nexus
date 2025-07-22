@@ -8,6 +8,7 @@ is setup!
 import geopandas as gpd
 import hdbscan
 import numpy as np
+import os
 import pandas as pd
 import requests
 import time
@@ -28,6 +29,7 @@ from config import (
     PHILLY_COUNTY_FIPS,
     PA_STATE_FIPS,
     CENSUS_SHAPE_URL,
+    PROBABILITY_THRESHOLD,
 )
 
 # Functions to fetch and clean data ----------------------------------------------------------------
@@ -578,11 +580,34 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     noise_prop = np.sum(labels == -1) / len(labels)
     num_clusters = len(set(labels)) - (1 if -1 in labels else 0)
     custom_score = (dbcv_score - noise_prop) - (0.1 * np.log1p(num_clusters))
-    print(f"Clustering complete with custom score: {custom_score:.4f}, ")
+    print(f"Clustering complete with custom score: {custom_score:.4f}")
+
+    # Calculate cluster quality and filter for high-quality clusters.
+    # This identifies stable clusters based on HDBSCAN's probabilities.
+
+    # Get the cluster labels and probabilities for each observation
+    labels = clusterer.labels_
+    probs = clusterer.probabilities_
+
+    # Create a DataFrame with labels and probabilities
+    prob_df = pd.DataFrame({"label": labels, "probability": probs})
+
+    # Exclude noise
+    prob_df = prob_df[(prob_df["label"] != -1)]
+
+    # Compute mean probability for each cluster
+    mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
+
+    # Filter clusters with mean probability over the threshold
+    high_quality_clusters = mean_probs[mean_probs > PROBABILITY_THRESHOLD]
+
+    # Subset to only the high quality clusters
+    df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
+    print(f"\nFiltered data to {len(df_high_quality)} points belonging to high-quality clusters.")
 
     # Save the final labeled data.
-    output_path = f"data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
-    df.to_pickle(output_path)
+    output_path = f"..data/labeled_merged_data_{start_str}_to_{end_str}.pkl"
+    df_high_quality.to_pickle(output_path)
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
 
@@ -595,6 +620,7 @@ def main():
     START_DATE = END_DATE - timedelta(days=3 * 365)
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
+    END_STR_2_DAYS_AGO = (END_DATE - timedelta(2)).strftime("%Y-%m-%d")
 
     # Part 1: Data Retrieval and Merging
     print("Starting data retrieval and merging...")
@@ -668,6 +694,13 @@ def main():
     # Drop any remaining missing values; these are rare cases not worth imputing
     final_merged_df = merged_df.dropna()
     assert final_merged_df.isna().sum().sum() == 0, "Error: Missing values were found!"
+
+    # Save the data from 2 days ago from the end date
+    data_2_days_ago = final_merged_df[
+        final_merged_df["dispatch_date_dt"] >= (END_DATE - timedelta(days=2)).date()
+    ]
+    output_path = f"..data/merged_data_{END_STR_2_DAYS_AGO}.pkl"
+    data_2_days_ago.to_pickle(output_path)
 
     # Part 2: Clustering
     run_clustering_pipeline(final_merged_df, START_STR, END_STR)
