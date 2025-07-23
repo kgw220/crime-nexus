@@ -50,3 +50,9 @@ RUN_RETENTION_DAYS = 7
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
 # a paid tier.
 NUM_EXPERIMENT_EVALS = 10
+
+# Number of top High Quality clusters to keep
+HQ_CLUSTER_LIMIT = 10
+
+# Random seed to get the psuedo random number generator
+RANDOM_SEED = 42
