@@ -83,9 +83,28 @@ def fetch_crime_data(table: str, start_date: str, end_date: str, carto_url: str)
         FROM {table}
         WHERE dispatch_date >= '{start_date}' AND dispatch_date <= '{end_date}'
     """
-    # Connect to the OpenDataPhilly API and get the data
-    response = requests.get(carto_url, params={"q": query})
-    response.raise_for_status()
+
+    # Connect to the OpenDataPhilly API and get the data, with logic to handle request errors
+    max_retries = 5
+    response = None
+    retries = 0
+    while retries < max_retries:
+        try:
+            response = requests.get(carto_url, params={"q": query}, timeout=60)
+            if response.status_code in [500, 502, 503, 504]:
+                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException as e:
+            wait_time = 2**retries
+            print(f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+            retries += 1
+
+    if not response or response.status_code != 200:
+        print(f"Error: Failed to download crime data after {max_retries} retries.")
+        return pd.DataFrame()
+
     data = response.json().get("rows", [])
     crime_df = pd.DataFrame(data)
 
@@ -307,9 +326,28 @@ def fetch_census_data(
         "key": token,
     }
 
-    # Make the request to the Census API and parse the response
-    response = requests.get(CENSUS_API_URL, params=params)
-    response.raise_for_status()
+    # Make the request to the Census API and parse the response, with added logic for handling
+    # request errors
+    max_retries = 5
+    response = None
+    retries = 0
+    while retries < max_retries:
+        try:
+            response = requests.get(CENSUS_API_URL, params=params, timeout=20)
+            if response.status_code in [500, 502, 503, 504]:
+                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException as e:
+            wait_time = 2**retries
+            print(f"Warning: Census API request failed ({e}). Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+            retries += 1
+
+    if not response or response.status_code != 200:
+        print(f"Error: Failed to download census data after {max_retries} retries.")
+        return pd.DataFrame()
+
     data = response.json()
     census_df = pd.DataFrame(data[1:], columns=data[0])
 
@@ -412,15 +450,30 @@ def get_census_tracts(CENSUS_SHAPE_URL: str) -> gpd.GeoDataFrame:
     """
     print("Fetching census tracts from ArcGIS API...")
 
-    # Make the API call to get the GeoJSON data
-    response = requests.get(CENSUS_SHAPE_URL)
+    # Make the request to the ArcGIS API and parse the response, with added logic for handling
+    # request errors
+    max_retries = 5
+    response = None
+    retries = 0
+    while retries < max_retries:
+        try:
+            response = requests.get(CENSUS_SHAPE_URL, timeout=20)
+            if response.status_code in [500, 502, 503, 504]:
+                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException as e:
+            wait_time = 2**retries
+            print(f"Warning: ArcGIS request failed ({e}). Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+            retries += 1
 
-    # This will raise an error if the request fails
-    response.raise_for_status()
+    if not response or response.status_code != 200:
+        print(f"Error: Failed to download census tracts after {max_retries} retries.")
+        return gpd.GeoDataFrame()
 
     # Load the GeoJSON response directly into a GeoDataFrame
     gdf_tracts = gpd.GeoDataFrame.from_features(response.json()["features"])
-
     # Set the coordinate reference system, which is standard for web data
     gdf_tracts = gdf_tracts.set_crs("EPSG:4326")
 
@@ -823,7 +876,7 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict) -> pd.DataFrame:
         The dataframe `df` with cluster labels, filtered down to the observations with the most
         confident clusters
     """
-    print("\nRunning final pipeline with best hyperparameters...")
+    print(f"\nRunning final pipeline with best hyperparameters: {best_params}")
 
     # Preprocess the data
     scaler = StandardScaler()
@@ -896,6 +949,9 @@ def main():
     print("Starting data retrieval and merging...")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(CRIME_TABLE_NAME, START_STR, END_STR, CARTO_URL)
+    if crime_df.empty:
+        print("No crime data was found for the specified date range. Exiting pipeline.")
+        return
     crime_df = clean_crime_data(crime_df)
 
     # Initialize an empty list to hold the weather DataFrames for each year
@@ -936,14 +992,23 @@ def main():
         print("\n No weather data could be downloaded.")
         weather_df = pd.DataFrame()
 
+    if weather_df.empty:
+        print("No weather data was found for the specified date range. Exiting pipeline.")
+        return
     weather_df = clean_weather_data(weather_df)
 
     census_df = fetch_census_data(PA_STATE_FIPS, PHILLY_COUNTY_FIPS, CENSUS_TOKEN, CENSUS_API_URL)
+    if census_df.empty:
+        print("No census data was found for the specified date range. Exiting pipeline.")
+        return
     census_df = clean_census_data(census_df)
 
     # To properly map census data, I need to determine which tract each crime is in.
     # This uses a geojson file that outlines each census tract in Philadelphia.
     gdf_tracts = get_census_tracts(CENSUS_SHAPE_URL)
+    if gdf_tracts.empty:
+        print("No census tract data was found for the specified date range. Exiting pipeline.")
+        return
 
     # Perform spatial join to map crimes to census tracts
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
