@@ -38,16 +38,8 @@ from config import (
     PROBABILITY_THRESHOLD,
     SEARCH_SPACE,
     RUN_RETENTION_DAYS,
+    NUM_EXPERIMENT_EVALS,
 )
-
-
-# Set the number of evaluations the TPE algorithm will perform
-# NOTE: Ideally, this would be set higher, but each run takes ~30 minutes to load, and GitHub
-# Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
-# lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
-# a paid tier.
-NUM_EXPERIMENT_EVALS = 10
-
 
 # Functions to fetch and clean data ----------------------------------------------------------------
 
@@ -647,8 +639,12 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
     """
     print(f"\nCleaning up runs older than {days_to_keep} days...")
 
-    # Calculate the cutoff timestamp
+    # Get the cutoff date for experiment runs
     cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+    cutoff_timestamp_ms = int(cutoff_date.timestamp() * 1000)
+
+    # Search for runs older than the cutoff date using the numeric timestamp
+    filter_string = f"attributes.start_time < {cutoff_timestamp_ms}"
 
     # Search for runs older than the cutoff date
     runs_to_delete = mlflow.search_runs(
