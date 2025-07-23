@@ -925,7 +925,12 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict) -> pd.DataFrame:
     prob_df = prob_df[prob_df["label"] != -1]
 
     if not prob_df.empty:
-        mean_probs = prob_df.groupby("label")["probability"].mean()
+        # NOTE: I only limit to 10 high quality clusters in the case where there happens to be more
+        # than 10. This is to help make the visualization less messy, but ideally, I should show all
+        # clusters.
+        mean_probs = (
+            prob_df.groupby("label")["probability"].mean().sort_values(ascending=False).head(10)
+        )
         high_quality_clusters = mean_probs[mean_probs > PROBABILITY_THRESHOLD]
         df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
