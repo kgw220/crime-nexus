@@ -30,7 +30,7 @@ PHILLY_COUNTY_FIPS = "101"
 PA_STATE_FIPS = "42"
 
 # Probability threshold for clustering
-PROBABILITY_THRESHOLD = 0.99
+PROBABILITY_THRESHOLD = 0.975
 
 # Hyperopt space
 SEARCH_SPACE = {
