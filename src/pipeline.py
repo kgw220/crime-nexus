@@ -36,15 +36,17 @@ from config import (
     PA_STATE_FIPS,
     CENSUS_SHAPE_URL,
     PROBABILITY_THRESHOLD,
+    SEARCH_SPACE,
+    RUN_RETENTION_DAYS,
 )
 
 
 # Set the number of evaluations the TPE algorithm will perform
-# NOTE: Ideally, this would be set higher, but each run takes several minutes to load, and GitHub
+# NOTE: Ideally, this would be set higher, but each run takes ~30 minutes to load, and GitHub
 # Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
-# a paid tier
-NUM_EXPERIMENT_EVALS = 15
+# a paid tier.
+NUM_EXPERIMENT_EVALS = 10
 
 
 # Functions to fetch and clean data ----------------------------------------------------------------
@@ -633,13 +635,59 @@ def run_clustering_pipeline(df: pd.DataFrame, start_str: str, end_str: str) -> p
     print(f"Clustering complete. Labeled data saved to {output_path}")
 
 
+def cleanup_old_runs(experiment_id: str, days_to_keep: int):
+    """
+    Deletes all runs in an MLFlow experiment that are older than the specified retention period.
+
+    Parameters:
+    experiment_id: str
+        The string indicating the MLFlow experiment
+    days_to_keep: int
+        An integer indicating how recent runs should be to be kept
+    """
+    print(f"\nCleaning up runs older than {days_to_keep} days...")
+
+    # Calculate the cutoff timestamp
+    cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+
+    # Search for runs older than the cutoff date
+    runs_to_delete = mlflow.search_runs(
+        experiment_ids=[experiment_id],
+        filter_string=f"start_time < '{cutoff_date.strftime('%Y-%m-%d')}'",
+        run_view_type=mlflow.entities.ViewType.ACTIVE_ONLY,
+    )
+
+    if runs_to_delete.empty:
+        print("No old runs to delete.")
+        return
+
+    print(f"Found {len(runs_to_delete)} runs to delete...")
+    for run_id in runs_to_delete["run_id"]:
+        try:
+            mlflow.delete_run(run_id)
+            print(f"  - Deleted run: {run_id}")
+        except Exception as e:
+            print(f"  - Error deleting run {run_id}: {e}")
+
+    print("Cleanup complete.")
+
+
 def run_tpe_search(df: pd.DataFrame, max_evals: int, pipeline_run_id: str):
     """
     Runs a hyperparameter search using Hyperopt's TPE algorithm, logging results to MLFlow.
-    """
-    print(f"Starting hyperparameter search for {max_evals} evaluations using TPE...")
 
-    # Prepare data for clustering (done once)
+    Parameters:
+    -----------
+    df: pd.DataFrame
+        The dataframe to applied UMAP/HDBSCAN on
+    max_evals: int
+        The number of MLFlow runs (or formally, iterations to try)
+    pipeline_run_id: str
+        A unique string to identify each set of daily MLFlow runs.
+    """
+    print(f"\nStarting hyperparameter search for {max_evals} evaluations using TPE...")
+
+    # Prepare data for clustering
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -656,28 +704,24 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int, pipeline_run_id: str):
     ]
     df_umap_ready = df_scaled.drop(columns=columns_to_drop)
 
-    # Define the Hyperopt Search Space
-    space = {
-        "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
-        "min_dist": hp.uniform("min_dist", 0.0, 0.5),
-        "n_components": hp.quniform("n_components", 5, 50, 1),
-        "min_cluster_size": hp.quniform("min_cluster_size", 4000, 6000, 100),
-        "min_samples": hp.quniform("min_samples", 10, 200, 5),
-    }
-
-    # Define the Objective Function for Hyperopt
-    def objective(params):
+    def objective(params: dict):
         """
         Objective function for Hyperopt to minimize. It runs the clustering pipeline
         and returns the negative of the custom score, logging everything to MLFlow.
+
+        Parameters:
+        -----------
+        params: dict
+            The dictionary of hyperparameters for UMAP/HDBSCAN
         """
+
+        # Convert to int
         params["n_neighbors"] = int(params["n_neighbors"])
         params["n_components"] = int(params["n_components"])
         params["min_cluster_size"] = int(params["min_cluster_size"])
         params["min_samples"] = int(params["min_samples"])
 
         with mlflow.start_run():
-
             # Tag the run with the unique pipeline execution ID
             mlflow.set_tag("pipeline_run_id", pipeline_run_id)
 
@@ -696,23 +740,27 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int, pipeline_run_id: str):
                 "gen_min_span_tree": True,
             }
 
+            # Apply UMAP/HDBSCAN
             reducer = umap.UMAP(**umap_params)
             df_embedding = reducer.fit_transform(df_umap_ready).astype("float64")
             clusterer = hdbscan.HDBSCAN(**hdbscan_params)
             clusterer.fit(df_embedding)
 
+            # Extract information for calculating custom score/metrics
             labels = clusterer.labels_
             dbcv_score = clusterer.relative_validity_
             noise_prop = np.sum(labels == -1) / len(labels) if len(labels) > 0 else 1.0
             num_clusters = len(set(labels)) - (1 if -1 in labels else 0)
             custom_score = (dbcv_score - noise_prop) - (0.1 * np.log1p(num_clusters))
 
-            print(f"-> Trial complete. Custom Score: {custom_score:.4f}")
+            print(f"Trial complete. Custom Score: {custom_score:.4f}")
             mlflow.log_metric("custom_score", custom_score)
             mlflow.log_metric("dbcv_score", dbcv_score)
             mlflow.log_metric("noise_proportion", noise_prop)
             mlflow.log_metric("num_clusters", num_clusters)
 
+            # Use the negative custom score (which ideally, is maximized at ~0.89), as the loss to
+            # minimize
             return {"loss": -custom_score, "status": STATUS_OK}
 
     # Run the TPE Optimization
@@ -721,7 +769,7 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int, pipeline_run_id: str):
 
     fmin(
         fn=objective,
-        space=space,
+        space=SEARCH_SPACE,
         algo=tpe.suggest,
         max_evals=max_evals,
         trials=trials,
@@ -732,10 +780,17 @@ def run_tpe_search(df: pd.DataFrame, max_evals: int, pipeline_run_id: str):
 def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     """
     Queries MLFlow to find the best run from the experiment and returns its parameters.
+
+    Parameters:
+    ----------
+    experiment_id: str
+        The unique experiment_id of the MLFlow experiment
+    pipeline_run_id: str
+        The unique string to identify today's run
     """
     print("\nFinding best run from today's runs...")
 
-    # Filter runs by the unique pipeline_run_id tag
+    # Filter runs by the unique pipeline_run_id tag for the top one with the highest custom score
     filter_string = f"tags.pipeline_run_id = '{pipeline_run_id}'"
     best_run = mlflow.search_runs(
         experiment_ids=[experiment_id],
@@ -747,6 +802,7 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     if best_run.empty:
         raise Exception("No runs found in the experiment. Cannot determine best parameters.")
 
+    # Extract the set of best parameters
     best_params = best_run.filter(regex="params\..*").to_dict("records")[0]
     best_params = {key.replace("params.", ""): value for key, value in best_params.items()}
 
@@ -754,12 +810,26 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     return best_params
 
 
-def run_final_pipeline(df: pd.DataFrame, best_params: dict, start_str: str, end_str: str):
+def run_final_pipeline(df: pd.DataFrame, best_params: dict) -> pd.DataFrame:
     """
-    Runs the clustering pipeline with the best hyperparameters and saves the final output.
+    Runs the clustering pipeline with the best hyperparameters from the MLFlow experiment,
+    and saves the final output.
+
+    Parameters:
+    -----------
+    df: pd.DataFrame
+        The data to run UMAP/HDBSCAN on. This data has cluster labels attached to each observation
+    best_params: dict
+        A dictionary of the best parameters, returned from `get_best_run_parameters`
+
+    Returns:
+    pd.DataFrame
+        The dataframe `df` with cluster labels, filtered down to the observations with the most
+        confident clusters
     """
     print("\nRunning final pipeline with best hyperparameters...")
 
+    # Preprocess the data
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -776,6 +846,7 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict, start_str: str, end_
     ]
     df_umap_ready = df_scaled.drop(columns=columns_to_drop)
 
+    # Fit/transform data with UMAP/HDBSCAN
     umap_params = {
         "n_neighbors": int(float(best_params["n_neighbors"])),
         "min_dist": float(best_params["min_dist"]),
@@ -793,8 +864,12 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict, start_str: str, end_
     clusterer = hdbscan.HDBSCAN(**hdbscan_params)
     clusterer.fit(df_embedding)
 
+    # Attach cluster labels to the ORIGINAL dataframe that was never scaled/transformed by UMAP
     df["cluster_label"] = clusterer.labels_
 
+    # Get the top clusters that have an average probability score greater than the
+    # PROBABILITY_THRESHOLD across all observations for each cluster; In other words, get the most
+    # "confident" clusters (since saving them all will be messy in the final visualization)
     labels = clusterer.labels_
     probs = clusterer.probabilities_
     prob_df = pd.DataFrame({"label": labels, "probability": probs})
@@ -806,14 +881,6 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict, start_str: str, end_
         df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
         print(f"\nFiltered final data to {len(df_high_quality)} points in high-quality clusters.")
-
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        data_dir = os.path.join(base_dir, "data")
-        os.makedirs(data_dir, exist_ok=True)
-        output_path = os.path.join(data_dir, f"labeled_merged_data_{start_str}_to_{end_str}.pkl")
-
-        df_high_quality.to_pickle(output_path)
-        print(f"Final clustered data saved to {output_path}")
     else:
         print("No high-quality clusters found in the final run.")
 
@@ -903,6 +970,7 @@ def main():
     assert final_merged_df.isna().sum().sum() == 0, "Error: Missing values were found!"
 
     # Print some information about the final merged DataFrame
+    print("Merged Data: ")
     print(merged_df.head())
     print(merged_df.info())
 
@@ -912,6 +980,7 @@ def main():
         final_merged_df["dispatch_date_dt"] >= two_days_ago_date
     ].copy()
 
+    print(f"Merged Data on {two_days_ago_date}: ")
     print(data_2_days_ago.head())
     print(data_2_days_ago.info())
 
@@ -932,11 +1001,19 @@ def main():
     if not mlflow_tracking_uri:
         raise ValueError("MLFLOW_TRACKING_URI environment variable not set!")
 
+    # Set URI and experiment name (linked up to my DataBricks Free Ver personal workspace)
     mlflow.set_tracking_uri(mlflow_tracking_uri)
     experiment_name = "/Users/kevingrahamwu@gmail.com/Daily_Crime_Clustering"
     mlflow.set_experiment(experiment_name)
 
-    # reate a unique ID for this specific pipeline execution
+    # Remove old experiments to avoid having so many in the single MLFlow experiment
+    # TODO: Set up a proper database to store previous runs' data
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if experiment:
+        cleanup_old_runs(experiment.experiment_id, RUN_RETENTION_DAYS)
+
+    # Create a unique ID for this specific pipeline execution; This will be used to identify which
+    # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
 
     # Run the TPE hyperparameter search
@@ -946,8 +1023,13 @@ def main():
     experiment = mlflow.get_experiment_by_name(experiment_name)
     best_params = get_best_run_parameters(experiment.experiment_id, pipeline_run_id)
 
-    # Run the final pipeline with the best parameters
-    run_final_pipeline(final_merged_df, best_params, START_STR, END_STR)
+    # Run the final pipeline with the best parameters, and save the file
+    df_final = run_final_pipeline(final_merged_df, best_params)
+    labeled_output_path = os.path.join(
+        data_dir, f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl"
+    )
+    df_final.to_pickle(labeled_output_path)
+    print(f"Final clustered data saved to {output_path}")
     # run_clustering_pipeline(final_merged_df, START_STR, END_STR)
 
 

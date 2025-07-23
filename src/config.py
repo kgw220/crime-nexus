@@ -1,9 +1,12 @@
 """
 This script sets up the necessary configurations and constants for retrieving
-weather, crime, and census data. It includes API tokens, URLs for data sources, and FIPS codes.
+weather, crime, and census data. It includes API tokens, URLs for data sources, FIPS codes, the
+probability threshold for clustering, and the hyperparameter search space.
 """
 
 import os
+
+from hyperopt import hp
 
 # Read API tokens from environment variables
 NOAA_TOKEN = os.getenv("NOAA_TOKEN")
@@ -28,3 +31,15 @@ PA_STATE_FIPS = "42"
 
 # Probability threshold for clustering
 PROBABILITY_THRESHOLD = 0.99
+
+# Hyperopt space
+SEARCH_SPACE = {
+    "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
+    "min_dist": hp.uniform("min_dist", 0.0, 0.5),
+    "n_components": hp.quniform("n_components", 5, 50, 1),
+    "min_cluster_size": hp.quniform("min_cluster_size", 4000, 6000, 100),
+    "min_samples": hp.quniform("min_samples", 10, 200, 5),
+}
+
+# How many days of data to keep at once
+RUN_RETENTION_DAYS = 7
