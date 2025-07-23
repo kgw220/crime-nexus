@@ -208,7 +208,7 @@ def main():
     run_tpe_search(
         df=final_merged_df,
         max_evals=NUM_EXPERIMENT_EVALS,
-        seed=RNG_SEED,
+        seed=RANDOM_SEED,
         pipeline_run_id=pipeline_run_id,
         search_space=SEARCH_SPACE,
     )
@@ -221,7 +221,7 @@ def main():
     df_final = run_final_pipeline(
         df=final_merged_df,
         best_params=best_params,
-        seed=RNG_SEED,
+        seed=RANDOM_SEED,
         max_clusters=HQ_CLUSTER_LIMIT,
         prob_threshold=PROBABILITY_THRESHOLD,
     )
