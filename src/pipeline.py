@@ -649,7 +649,7 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
     # Search for runs older than the cutoff date
     runs_to_delete = mlflow.search_runs(
         experiment_ids=[experiment_id],
-        filter_string=f"start_time < '{cutoff_date.strftime('%Y-%m-%d')}'",
+        filter_string=f"attributes.start_time < {cutoff_timestamp_ms}",
         run_view_type=mlflow.entities.ViewType.ACTIVE_ONLY,
     )
 
