@@ -925,7 +925,7 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict) -> pd.DataFrame:
     prob_df = prob_df[prob_df["label"] != -1]
 
     if not prob_df.empty:
-        mean_probs = prob_df.groupby("label")["probability"].mean()
+        mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
         high_quality_clusters = mean_probs[mean_probs > PROBABILITY_THRESHOLD]
         df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
@@ -933,6 +933,7 @@ def run_final_pipeline(df: pd.DataFrame, best_params: dict) -> pd.DataFrame:
     else:
         print("No high-quality clusters found in the final run.")
 
+    return df_high_quality
 
 def main():
     """
