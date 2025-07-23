@@ -30,7 +30,7 @@ PHILLY_COUNTY_FIPS = "101"
 PA_STATE_FIPS = "42"
 
 # Probability threshold for clustering
-PROBABILITY_THRESHOLD = 0.95
+PROBABILITY_THRESHOLD = 0.975
 
 # Hyperopt space
 SEARCH_SPACE = {
@@ -49,4 +49,4 @@ RUN_RETENTION_DAYS = 7
 # Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
 # a paid tier.
-NUM_EXPERIMENT_EVALS = 1
+NUM_EXPERIMENT_EVALS = 10
