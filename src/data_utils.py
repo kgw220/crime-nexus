@@ -144,7 +144,11 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     crime_df["day_of_week_cos"] = np.cos(2 * np.pi * crime_df["day_of_week"] / 7.0)
     crime_df = crime_df.drop(columns=["hour", "month", "day_of_week"])
 
-    print(crime_df.info())
+    # Print out the date range of data
+    min_date = crime_df["dispatch_date"].min()
+    max_date = crime_df["dispatch_date"].max()
+    print(f"\n<<<<< Crime data contains data from {min_date} to {max_date}! >>>>>")
+
     return crime_df
 
 
@@ -267,7 +271,12 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
         "TMIN": "min_temp_f",
     }
     weather_df = weather_df.rename(columns=weather_rename_map)
-    print(weather_df.info())
+
+    # Print out the date range of data
+    min_date = weather_df["date_dt"].min()
+    max_date = weather_df["date_dt"].max()
+    print(f"<<<<< Weather data contains data from {min_date} to {max_date}! >>>>>")
+
     return weather_df
 
 
