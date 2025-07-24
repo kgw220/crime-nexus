@@ -113,7 +113,7 @@ def main():
             (weather_df["date_dt_obj"] >= pd.to_datetime(START_STR))
             & (weather_df["date_dt_obj"] <= pd.to_datetime(END_STR))
         ].drop(columns=["date_dt_obj"])
-        print(f"\n----------Successfully combined weather data for {len(weather_df)} days.----------")
+        print(f"\nSuccessfully combined weather data for {len(weather_df)} days.")
     else:
         print("\n No weather data could be downloaded.")
         weather_df = pd.DataFrame()
@@ -190,6 +190,8 @@ def main():
     print(f"Daily merged data saved to {output_path}")
 
     # Part 2: Clustering- --------------------------------------------------------------------------
+    print("----------Data has successfully been merged! Now starting clustering part of pipeline----------")
+    
     mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     if not mlflow_tracking_uri:
         raise ValueError("MLFLOW_TRACKING_URI environment variable not set!")
@@ -208,7 +210,7 @@ def main():
     # Create a unique ID for this specific pipeline execution; This will be used to identify which
     # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
-    print(f"----------The unique pipeline for today is {pipeline_run_id}----------")
+    print(f"⚠️The unique pipeline for today is {pipeline_run_id}⚠️")
     
     # Run the TPE hyperparameter search
     run_tpe_search(
