@@ -42,7 +42,7 @@ def fetch_crime_data(
     pd.DataFrame
         A DataFrame containing the crime data with relevant columns.
     """
-    print(f"Extracting crime data from {start_date} to {end_date}...")
+    print(f"<<<<< Extracting crime data from {start_date} to {end_date} >>>>>")
     # Simple SQL query to get the data needed from the OpenDataPhilly database
     # Subsetting to the columns we need, some are left out because I think they are irrelevant
     # Variables Selected:
@@ -93,7 +93,7 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     Clean the crime data to prepare for analysis. This involves steps like one-hot encoding,
     removing NAs, renaming columns, and creating new features.
     """
-    print("Cleaning crime data...")
+    print("<<<<< Cleaning crime data >>>>>")
 
     # Drop rows with missing latitude, longitude, or police service area (psa)
     crime_df = crime_df.dropna(subset=["lat", "lon", "psa"])
@@ -175,7 +175,7 @@ def fetch_weather_data(
     max_retries: int
         The number of retries if the request fails initially
     """
-    print(f"Fetching weather from {start_date} to {end_date}...")
+    print(f"<<<<< Fetching weather from {start_date} to {end_date} >>>>>")
 
     headers = {"token": token}
     all_results = []
@@ -255,6 +255,7 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         A cleaned DataFrame with relevant columns and features for analysis.
     """
+    print("<<<<< Cleaning weather data >>>>>")
     # Rename columns for clarity
     weather_rename_map = {
         "AWND": "avg_wind_speed_mph",
@@ -294,7 +295,7 @@ def fetch_census_data(
     pd.DataFrame
         A DataFrame containing the census data with relevant columns and calculated rates.
     """
-    print(f"Downloading census data for Philadelphia County (FIPS: {state_fips}{county_fips})...")
+    print(f"<<<<< Downloading census data for Philadelphia County (FIPS: {state_fips}{county_fips}) >>>>>")
 
     # Variables Selected:
     # NAME: Geographic Area Name
@@ -362,6 +363,7 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         A cleaned DataFrame with relevant columns and features for analysis.
     """
+    print("<<<<< Cleaning census data >>>>>")
     # Rename columns for clarity on what they represent
     census_df = census_df.rename(
         columns={
@@ -443,7 +445,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     gpd.GeoDataFrame
         A GeoDataFrame containing the census tracts with their geometries.
     """
-    print("Fetching census tracts from ArcGIS API...")
+    print("<<<<< Fetching census tracts from ArcGIS API >>>>>")
 
     # Make the request to the ArcGIS API and parse the response, with added logic for handling
     # request errors
@@ -493,7 +495,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
         A merged DataFrame containing crime and census data.
     """
     # Convert the crime DataFrame to a GeoDataFrame
-    print("Converting crime data to GeoDataFrame...")
+    print("<<<<< Converting crime data to GeoDataFrame >>>>>")
     crime_gdf = gpd.GeoDataFrame(
         crime_df,
         geometry=gpd.points_from_xy(crime_df["lon"], crime_df["lat"]),
@@ -553,7 +555,7 @@ def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         The DataFrame with an additional column for population density.
     """
-    print("Calculating population density...")
+    print("<<<<< Calculating population density >>>>>")
 
     # Convert land_area_sq_meters to square kilometers, replacing 0 with NaN to avoid errors
     # Divide by 1,000,000 to convert square meters to square kilometers
@@ -585,7 +587,7 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
     days_to_keep: int
         An integer indicating how recent runs should be to be kept
     """
-    print(f"\nCleaning up runs older than {days_to_keep} days...")
+    print(f"\n<<<<< Cleaning up runs older than {days_to_keep} days >>>>>")
 
     # Get the cutoff date for experiment runs
     cutoff_date = datetime.now() - timedelta(days=days_to_keep)
@@ -635,7 +637,7 @@ def run_tpe_search(
     search_space: dict
         The search space dictionary
     """
-    print(f"\nStarting hyperparameter search for {max_evals} evaluations using TPE...")
+    print(f" <<<<< Starting hyperparameter search for {max_evals} evaluations using TPE >>>>>")
 
     # Prepare data for clustering
     scaler = StandardScaler()
@@ -738,7 +740,7 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     pipeline_run_id: str
         The unique string to identify today's run
     """
-    print("\nFinding best run from today's runs...")
+    print("<<<<< Finding best run from today's runs >>>>>")
 
     # Filter runs by the unique pipeline_run_id tag for the top one with the highest custom score
     filter_string = f"tags.pipeline_run_id = '{pipeline_run_id}'"
@@ -785,7 +787,7 @@ def run_final_pipeline(
         The dataframe `df` with cluster labels, filtered down to the observations with the most
         confident clusters
     """
-    print(f"\nRunning final pipeline with best hyperparameters: {best_params}")
+    print(f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>")
 
     # Preprocess the data
     scaler = StandardScaler()
