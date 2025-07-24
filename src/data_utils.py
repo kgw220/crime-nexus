@@ -42,7 +42,7 @@ def fetch_crime_data(
     pd.DataFrame
         A DataFrame containing the crime data with relevant columns.
     """
-    print(f"<<<<< Extracting crime data from {start_date} to {end_date} >>>>>")
+    print(f"\n<<<<< Extracting crime data from {start_date} to {end_date} >>>>>")
     # Simple SQL query to get the data needed from the OpenDataPhilly database
     # Subsetting to the columns we need, some are left out because I think they are irrelevant
     # Variables Selected:
@@ -93,7 +93,7 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     Clean the crime data to prepare for analysis. This involves steps like one-hot encoding,
     removing NAs, renaming columns, and creating new features.
     """
-    print("<<<<< Cleaning crime data >>>>>")
+    print("\n<<<<< Cleaning crime data >>>>>")
 
     # Drop rows with missing latitude, longitude, or police service area (psa)
     crime_df = crime_df.dropna(subset=["lat", "lon", "psa"])
@@ -144,6 +144,7 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     crime_df["day_of_week_cos"] = np.cos(2 * np.pi * crime_df["day_of_week"] / 7.0)
     crime_df = crime_df.drop(columns=["hour", "month", "day_of_week"])
 
+    print(crime_df.info())
     return crime_df
 
 
@@ -175,7 +176,7 @@ def fetch_weather_data(
     max_retries: int
         The number of retries if the request fails initially
     """
-    print(f"<<<<< Fetching weather from {start_date} to {end_date} >>>>>")
+    print(f"\n<<<<< Fetching weather from {start_date} to {end_date} >>>>>")
 
     headers = {"token": token}
     all_results = []
@@ -255,7 +256,7 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         A cleaned DataFrame with relevant columns and features for analysis.
     """
-    print("<<<<< Cleaning weather data >>>>>")
+    print("\n<<<<< Cleaning weather data >>>>>")
     # Rename columns for clarity
     weather_rename_map = {
         "AWND": "avg_wind_speed_mph",
@@ -266,7 +267,7 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
         "TMIN": "min_temp_f",
     }
     weather_df = weather_df.rename(columns=weather_rename_map)
-
+    print(weather_df.info())
     return weather_df
 
 
@@ -295,7 +296,10 @@ def fetch_census_data(
     pd.DataFrame
         A DataFrame containing the census data with relevant columns and calculated rates.
     """
-    print(f"<<<<< Downloading census data for Philadelphia County (FIPS: {state_fips}{county_fips}) >>>>>")
+    print(
+        f"\n<<<<< Downloading census data for Philadelphia County (FIPS: {state_fips}{county_fips})\
+              >>>>>"
+    )
 
     # Variables Selected:
     # NAME: Geographic Area Name
@@ -445,7 +449,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     gpd.GeoDataFrame
         A GeoDataFrame containing the census tracts with their geometries.
     """
-    print("<<<<< Fetching census tracts from ArcGIS API >>>>>")
+    print("\n<<<<< Fetching census tracts from ArcGIS API >>>>>")
 
     # Make the request to the ArcGIS API and parse the response, with added logic for handling
     # request errors
@@ -495,7 +499,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
         A merged DataFrame containing crime and census data.
     """
     # Convert the crime DataFrame to a GeoDataFrame
-    print("<<<<< Converting crime data to GeoDataFrame >>>>>")
+    print("\n<<<<< Converting crime data to GeoDataFrame >>>>>")
     crime_gdf = gpd.GeoDataFrame(
         crime_df,
         geometry=gpd.points_from_xy(crime_df["lon"], crime_df["lat"]),
@@ -555,7 +559,7 @@ def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         The DataFrame with an additional column for population density.
     """
-    print("<<<<< Calculating population density >>>>>")
+    print("\n<<<<< Calculating population density >>>>>")
 
     # Convert land_area_sq_meters to square kilometers, replacing 0 with NaN to avoid errors
     # Divide by 1,000,000 to convert square meters to square kilometers
@@ -575,6 +579,37 @@ def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
 
 
 # Define functions related to the clustering part of the pipeline ----------------------------------
+
+
+def prepare_experiment(retention_days: int) -> str:
+    """
+    Perform some steps to initalize and setup today's runs for the MLFlow experiment.
+
+    Parameters:
+    -----------
+    retention_days: int
+        How many days of runs to keep in the experiment for archive purposes.
+
+    Returns:
+    --------
+    str:
+        The experiment name
+    """
+    print("\n<<<<< Preparing MLFlow experiment >>>>>")
+    mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+
+    # Set URI and experiment name (linked up to my DataBricks Free Version personal workspace)
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
+    experiment_name = os.environ.get("EXPERIMENT_NAME")
+    mlflow.set_experiment(experiment_name)
+
+    # Remove old experiments to avoid having so many in the single MLFlow experiment
+    # TODO: Set up a proper database to store previous runs' data
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if experiment:
+        cleanup_old_runs(experiment.experiment_id, retention_days)
+
+    return experiment_name
 
 
 def cleanup_old_runs(experiment_id: str, days_to_keep: int):
@@ -789,7 +824,7 @@ def run_final_pipeline(
     """
     print(f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>")
 
-    # Preprocess the data
+    # Preprocess the data as before
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -818,7 +853,6 @@ def run_final_pipeline(
         "min_samples": int(float(best_params["min_samples"])),
         "prediction_data": True,
     }
-
     reducer = umap.UMAP(**umap_params)
     df_embedding = reducer.fit_transform(df_umap_ready).astype("float64")
     clusterer = hdbscan.HDBSCAN(**hdbscan_params)
@@ -836,16 +870,14 @@ def run_final_pipeline(
     prob_df = prob_df[prob_df["label"] != -1]
 
     if not prob_df.empty:
-        mean_probs = (
-            prob_df.groupby("label")["probability"]
-            .mean()
-            .sort_values(ascending=False)
-            .head(max_clusters)
-        )
-        high_quality_clusters = mean_probs[mean_probs > prob_threshold]
+        mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
+        high_quality_clusters = mean_probs[mean_probs > prob_threshold].head(max_clusters)
         df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
-        print(f"\nFiltered final data to {len(df_high_quality)} points in high-quality clusters.")
+        print(
+            f"\nFiltered final data to {len(df_high_quality)} points in \
+                {len(high_quality_clusters)} high-quality clusters."
+        )
     else:
         print("No high-quality clusters found in the final run.")
 
