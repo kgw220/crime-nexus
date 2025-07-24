@@ -64,7 +64,7 @@ def main():
     END_STR_2_DAYS_AGO = (END_DATE - timedelta(2)).strftime("%Y-%m-%d")
 
     # Part 1: Data Retrieval and Merging -----------------------------------------------------------
-    print("Starting data retrieval and merging...")
+    print("----------Starting data retrieval and merging----------")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(
         table=CRIME_TABLE_NAME,
@@ -75,7 +75,7 @@ def main():
     )
     assert (
         not crime_df.empty
-    ), "CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution."
+    ), "~~~~~~~~~~CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution~~~~~~~~~~."
 
     crime_df = clean_crime_data(crime_df)
 
@@ -113,14 +113,14 @@ def main():
             (weather_df["date_dt_obj"] >= pd.to_datetime(START_STR))
             & (weather_df["date_dt_obj"] <= pd.to_datetime(END_STR))
         ].drop(columns=["date_dt_obj"])
-        print(f"\n Successfully combined weather data for {len(weather_df)} days.")
+        print(f"\n----------Successfully combined weather data for {len(weather_df)} days.----------")
     else:
         print("\n No weather data could be downloaded.")
         weather_df = pd.DataFrame()
 
     assert (
         not weather_df.empty
-    ), "CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution."
+    ), "~~~~~~~~~~CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution.~~~~~~~~~~"
 
     weather_df = clean_weather_data(weather_df)
 
@@ -133,7 +133,7 @@ def main():
     )
     assert (
         not census_df.empty
-    ), "CRITICAL: Census data fetch returned an empty DataFrame. Halting execution."
+    ), "~~~~~~~~~~CRITICAL: Census data fetch returned an empty DataFrame. Halting execution.~~~~~~~~~~"
     census_df = clean_census_data(census_df)
 
     # To properly map census data, I need to determine which tract each crime is in.
@@ -141,7 +141,7 @@ def main():
     gdf_tracts = get_census_tracts(CENSUS_SHAPE_URL, max_retries=5)
     assert (
         not gdf_tracts.empty
-    ), "CRITICAL: Census tract data fetch returned an empty DataFrame. Halting execution."
+    ), "~~~~~~~~~~CRITICAL: Census tract data fetch returned an empty DataFrame. Halting execution.~~~~~~~~~~"
 
     # Perform spatial join to map crimes to census tracts
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
@@ -208,7 +208,8 @@ def main():
     # Create a unique ID for this specific pipeline execution; This will be used to identify which
     # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
-
+    print(f"----------The unique pipeline for today is {pipeline_run_id}----------")
+    
     # Run the TPE hyperparameter search
     run_tpe_search(
         df=final_merged_df,
@@ -234,7 +235,7 @@ def main():
         data_dir, f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl"
     )
     df_final.to_pickle(labeled_output_path)
-    print(f"Final clustered data saved to {output_path}")
+    print(f"----------Final clustered data saved to {output_path}----------")
 
 
 if __name__ == "__main__":
