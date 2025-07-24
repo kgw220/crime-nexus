@@ -62,7 +62,6 @@ def main():
     START_DATE = END_DATE - timedelta(days=3 * 365)
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
-    END_STR_2_DAYS_AGO = (END_DATE - timedelta(2)).strftime("%Y-%m-%d")
 
     # Part 1: Data Retrieval and Merging -----------------------------------------------------------
     print("----------Starting data retrieval and merging----------")
@@ -173,15 +172,16 @@ def main():
     print(f"\n<<<<< 📝Final merged DataFrame contains data from {min_date} to {max_date}📝 >>>>>")
     assert final_merged_df.isnull().sum().sum() == 0, "🚨DataFrame contains null values.🚨"
 
-    # Save the data from 2 days ago from the end date
-    two_days_ago_date = (END_DATE - timedelta(days=2)).date()
-    data_2_days_ago = final_merged_df[
-        final_merged_df["dispatch_date_dt"] == two_days_ago_date
-    ].copy()
+    # Save just crime data from the latest date (END_DATE);
+    # NOTE: Ideally, I would use all the merged data, but there seems to be a ~3 day delay with the
+    # NOAA weather API (I receieve data from 7/24/25 on 7/27/25). This is not too important anyways,
+    # since this is used as a second layer over the final clusters.
+    yesterday_crime = crime_df[crime_df["dispatch_date"] == END_DATE]
 
-    print(f"Merged Data on {two_days_ago_date}: ")
-    print(data_2_days_ago.head())
-    print(data_2_days_ago.info())
+    print(f"<<<<< 📝Yesterday's recorded crimes:📝 >>>>>")
+    print(f"There were {len(yesterday_crime)} recorded crimes!")
+    print(yesterday_crime.head())
+    print(yesterday_crime.info())
 
     # Define the base directory (project root) and the data directory path
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -191,9 +191,9 @@ def main():
     os.makedirs(data_dir, exist_ok=True)
 
     # Construct the full output path and save the file
-    output_path = os.path.join(data_dir, f"merged_data_{END_STR_2_DAYS_AGO}.pkl")
-    data_2_days_ago.to_pickle(output_path)
-    print(f"Daily merged data saved to {output_path}")
+    output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
+    yesterday_crime.to_pickle(output_path)
+    print(f"Yesterday's crime data saved to {output_path}")
 
     # Part 2: Clustering- --------------------------------------------------------------------------
     print("---------- Data has been merged! Starting clustering part of pipeline----------")

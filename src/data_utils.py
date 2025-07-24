@@ -423,7 +423,7 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     rate_cols = ["poverty_rate", "vacancy_rate", "renter_occupancy_rate"]
     census_df[rate_cols] = census_df[rate_cols].fillna(0)
 
-    print(f"Downloaded and processed census data for {len(census_df)} tracts.")
+    print(f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>")
 
     # Return the final, clean set of columns
     final_columns = [
@@ -513,7 +513,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     )
 
     # Perform the spatial join
-    print("Performing spatial join to map crimes to census tracts...")
+    print("<<<<< Performing spatial join to map crimes to census tracts >>>>>")
     # Note: The 'predicate' argument was renamed to 'op' in recent geopandas versions
     try:
         # For newer GeoPandas versions
@@ -522,7 +522,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
         # For older GeoPandas versions
         final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", predicate="within")
 
-    print("\n Spatial join complete. Crime data now includes census tract info.")
+    print("\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>")
 
     # Clean up the final DataFrame
     final_crime_data = final_crime_data.drop(
