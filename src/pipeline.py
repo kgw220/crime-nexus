@@ -21,6 +21,7 @@ from data_utils import (
     get_census_tracts,
     merge_crime_census,
     calculate_population_density,
+    prepare_experiment,
     cleanup_old_runs,
     run_tpe_search,
     get_best_run_parameters,
@@ -91,7 +92,7 @@ def main():
         # Define the start and end for this specific year's API call
         year_start_str = f"{year}-01-01"
         year_end_str = f"{year}-12-31"
-        print(f"-> Downloading weather for year {year}...")
+        print(f"\n<<<<< Downloading weather for year {year} >>>>>")
         df_year = fetch_weather_data(
             station_id=WEATHER_STATION_ID,
             start_date=year_start_str,
@@ -104,7 +105,7 @@ def main():
         if not df_year.empty:
             weather_frames.append(df_year)
 
-    # If I successfully downloaded data for any year, combine them into a single DataFrame
+    # Combine the weather data from each year, into a single DataFrame
     if weather_frames:
         # Combine the data from all successful yearly calls
         weather_df = pd.concat(weather_frames, ignore_index=True)
@@ -114,9 +115,9 @@ def main():
             (weather_df["date_dt_obj"] >= pd.to_datetime(START_STR))
             & (weather_df["date_dt_obj"] <= pd.to_datetime(END_STR))
         ].drop(columns=["date_dt_obj"])
-        print(f"\nSuccessfully combined weather data for {len(weather_df)} days.")
+        print(f"\n<<<<< Successfully combined weather data for {len(weather_df)} days. >>>>>")
     else:
-        print("\n No weather data could be downloaded.")
+        print("\n <<<<< No weather data could be downloaded. >>>>>")
         weather_df = pd.DataFrame()
 
     assert (
@@ -199,25 +200,13 @@ def main():
             -----"
     )
 
-    mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
-    if not mlflow_tracking_uri:
-        raise ValueError("MLFLOW_TRACKING_URI environment variable not set!")
-
-    # Set URI and experiment name (linked up to my DataBricks Free Ver personal workspace)
-    mlflow.set_tracking_uri(mlflow_tracking_uri)
-    experiment_name = "/Users/kevingrahamwu@gmail.com/Daily_Crime_Clustering"
-    mlflow.set_experiment(experiment_name)
-
-    # Remove old experiments to avoid having so many in the single MLFlow experiment
-    # TODO: Set up a proper database to store previous runs' data
-    experiment = mlflow.get_experiment_by_name(experiment_name)
-    if experiment:
-        cleanup_old_runs(experiment.experiment_id, RUN_RETENTION_DAYS)
+    # Prepare the MLFlow experiment and get the name
+    exp_name = prepare_experiment(RUN_RETENTION_DAYS)
 
     # Create a unique ID for this specific pipeline execution; This will be used to identify which
     # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
-    print(f"⚠️The unique pipeline for today is {pipeline_run_id}⚠️")
+    print(f"⚠️The unique pipeline ID for today is {pipeline_run_id}⚠️")
 
     # Run the TPE hyperparameter search
     run_tpe_search(
@@ -229,7 +218,7 @@ def main():
     )
 
     # Get the best parameters from the experiment
-    experiment = mlflow.get_experiment_by_name(experiment_name)
+    experiment = mlflow.get_experiment_by_name(exp_name)
     best_params = get_best_run_parameters(experiment.experiment_id, pipeline_run_id)
 
     # Run the final pipeline with the best parameters, and save the file
