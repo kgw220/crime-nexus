@@ -75,7 +75,8 @@ def main():
     )
     assert (
         not crime_df.empty
-    ), "~~~~~~~~~~CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution~~~~~~~~~~."
+    ), "~~~~~~~~~~CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution~~~~~~~~\
+        ~~."
 
     crime_df = clean_crime_data(crime_df)
 
@@ -120,7 +121,8 @@ def main():
 
     assert (
         not weather_df.empty
-    ), "~~~~~~~~~~CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution.~~~~~~~~~~"
+    ), "~~~~~~~~~~CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution.~~~~~\
+        ~~~~~"
 
     weather_df = clean_weather_data(weather_df)
 
@@ -133,7 +135,8 @@ def main():
     )
     assert (
         not census_df.empty
-    ), "~~~~~~~~~~CRITICAL: Census data fetch returned an empty DataFrame. Halting execution.~~~~~~~~~~"
+    ), "~~~~~~~~~~CRITICAL: Census data fetch returned an empty DataFrame. Halting execution.~~~~~~\
+        ~~~~"
     census_df = clean_census_data(census_df)
 
     # To properly map census data, I need to determine which tract each crime is in.
@@ -141,7 +144,8 @@ def main():
     gdf_tracts = get_census_tracts(CENSUS_SHAPE_URL, max_retries=5)
     assert (
         not gdf_tracts.empty
-    ), "~~~~~~~~~~CRITICAL: Census tract data fetch returned an empty DataFrame. Halting execution.~~~~~~~~~~"
+    ), "~~~~~~~~~~CRITICAL: Census tract data fetch returned an empty DataFrame. Halting execution.\
+        ~~~~~~~~~~"
 
     # Perform spatial join to map crimes to census tracts
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
@@ -190,8 +194,11 @@ def main():
     print(f"Daily merged data saved to {output_path}")
 
     # Part 2: Clustering- --------------------------------------------------------------------------
-    print("----------Data has successfully been merged! Now starting clustering part of pipeline----------")
-    
+    print(
+        "----------Data has successfully been merged! Now starting clustering part of pipeline-----\
+            -----"
+    )
+
     mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     if not mlflow_tracking_uri:
         raise ValueError("MLFLOW_TRACKING_URI environment variable not set!")
@@ -211,7 +218,7 @@ def main():
     # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
     print(f"⚠️The unique pipeline for today is {pipeline_run_id}⚠️")
-    
+
     # Run the TPE hyperparameter search
     run_tpe_search(
         df=final_merged_df,
