@@ -73,9 +73,10 @@ def main():
         carto_url=CARTO_URL,
         max_retries=5,
     )
-    if crime_df.empty:
-        print("No crime data was found for the specified date range. Exiting pipeline.")
-        return
+    assert (
+        not crime_df.empty
+    ), "CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution."
+
     crime_df = clean_crime_data(crime_df)
 
     # Initialize an empty list to hold the weather DataFrames for each year
@@ -117,9 +118,10 @@ def main():
         print("\n No weather data could be downloaded.")
         weather_df = pd.DataFrame()
 
-    if weather_df.empty:
-        print("No weather data was found for the specified date range. Exiting pipeline.")
-        return
+    assert (
+        not weather_df.empty
+    ), "CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution."
+
     weather_df = clean_weather_data(weather_df)
 
     census_df = fetch_census_data(
@@ -129,17 +131,17 @@ def main():
         census_api_url=CENSUS_API_URL,
         max_retries=5,
     )
-    if census_df.empty:
-        print("No census data was found for the specified date range. Exiting pipeline.")
-        return
+    assert (
+        not census_df.empty
+    ), "CRITICAL: Census data fetch returned an empty DataFrame. Halting execution."
     census_df = clean_census_data(census_df)
 
     # To properly map census data, I need to determine which tract each crime is in.
     # This uses a geojson file that outlines each census tract in Philadelphia.
     gdf_tracts = get_census_tracts(CENSUS_SHAPE_URL, max_retries=5)
-    if gdf_tracts.empty:
-        print("No census tract data was found for the specified date range. Exiting pipeline.")
-        return
+    assert (
+        not gdf_tracts.empty
+    ), "CRITICAL: Census tract data fetch returned an empty DataFrame. Halting execution."
 
     # Perform spatial join to map crimes to census tracts
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
@@ -159,7 +161,6 @@ def main():
 
     # Drop any remaining missing values; these are rare cases not worth imputing
     final_merged_df = merged_df.dropna()
-    assert final_merged_df.isna().sum().sum() == 0, "Error: Missing values were found!"
 
     # Print some information about the final merged DataFrame
     print("Merged Data: ")
