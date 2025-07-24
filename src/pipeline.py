@@ -76,8 +76,7 @@ def main():
     )
     assert (
         not crime_df.empty
-    ), "~~~~~~~~~~CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution~~~~~~~~\
-        ~~."
+    ), "🚨CRITICAL: Crime data fetch returned an empty DataFrame. Halting execution.🚨"
 
     crime_df = clean_crime_data(crime_df)
 
@@ -122,8 +121,7 @@ def main():
 
     assert (
         not weather_df.empty
-    ), "~~~~~~~~~~CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution.~~~~~\
-        ~~~~~"
+    ), "🚨CRITICAL: Weather data fetch returned an empty DataFrame. Halting execution.🚨"
 
     weather_df = clean_weather_data(weather_df)
 
@@ -136,8 +134,8 @@ def main():
     )
     assert (
         not census_df.empty
-    ), "~~~~~~~~~~CRITICAL: Census data fetch returned an empty DataFrame. Halting execution.~~~~~~\
-        ~~~~"
+    ), "CRITICAL: Census data fetch returned an empty DataFrame. Halting execution.🚨"
+
     census_df = clean_census_data(census_df)
 
     # To properly map census data, I need to determine which tract each crime is in.
@@ -145,8 +143,7 @@ def main():
     gdf_tracts = get_census_tracts(CENSUS_SHAPE_URL, max_retries=5)
     assert (
         not gdf_tracts.empty
-    ), "~~~~~~~~~~CRITICAL: Census tract data fetch returned an empty DataFrame. Halting execution.\
-        ~~~~~~~~~~"
+    ), "🚨Census tract data fetch returned an empty DataFrame. Halting execution.🚨"
 
     # Perform spatial join to map crimes to census tracts
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
@@ -167,15 +164,19 @@ def main():
     # Drop any remaining missing values; these are rare cases not worth imputing
     final_merged_df = merged_df.dropna()
 
-    # Print some information about the final merged DataFrame
+    # Print some information about the final merged DataFrame and check for nulls
     print("Merged Data: ")
-    print(merged_df.head())
-    print(merged_df.info())
+    print(final_merged_df.head())
+    print(final_merged_df.info())
+    min_date = final_merged_df["dispatch_date"].min()
+    max_date = final_merged_df["dispatch_date"].max()
+    print(f"\n<<<<< 📝Final merged DataFrame contains data from {min_date} to {max_date}📝 >>>>>")
+    assert final_merged_df.isnull().sum().sum() == 0, "🚨DataFrame contains null values.🚨"
 
     # Save the data from 2 days ago from the end date
     two_days_ago_date = (END_DATE - timedelta(days=2)).date()
     data_2_days_ago = final_merged_df[
-        final_merged_df["dispatch_date_dt"] >= two_days_ago_date
+        final_merged_df["dispatch_date_dt"] == two_days_ago_date
     ].copy()
 
     print(f"Merged Data on {two_days_ago_date}: ")
@@ -195,10 +196,7 @@ def main():
     print(f"Daily merged data saved to {output_path}")
 
     # Part 2: Clustering- --------------------------------------------------------------------------
-    print(
-        "----------Data has successfully been merged! Now starting clustering part of pipeline-----\
-            -----"
-    )
+    print("---------- Data has been merged! Starting clustering part of pipeline----------")
 
     # Prepare the MLFlow experiment and get the name
     exp_name = prepare_experiment(RUN_RETENTION_DAYS)
@@ -206,7 +204,7 @@ def main():
     # Create a unique ID for this specific pipeline execution; This will be used to identify which
     # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
-    print(f"⚠️The unique pipeline ID for today is {pipeline_run_id}⚠️")
+    print(f"🪪The unique pipeline ID for today is {pipeline_run_id}🪪")
 
     # Run the TPE hyperparameter search
     run_tpe_search(

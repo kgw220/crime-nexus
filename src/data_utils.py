@@ -147,7 +147,7 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     # Print out the date range of data
     min_date = crime_df["dispatch_date"].min()
     max_date = crime_df["dispatch_date"].max()
-    print(f"\n<<<<< Crime data contains data from {min_date} to {max_date}! >>>>>")
+    print(f"\n<<<<< 📝Crime data contains data from {min_date} to {max_date}!📝 >>>>>")
 
     return crime_df
 
@@ -275,7 +275,7 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     # Print out the date range of data
     min_date = weather_df["date_dt"].min()
     max_date = weather_df["date_dt"].max()
-    print(f"<<<<< Weather data contains data from {min_date} to {max_date}! >>>>>")
+    print(f"<<<<< 📝Weather data contains data from {min_date} to {max_date}!📝 >>>>>")
 
     return weather_df
 
@@ -305,10 +305,7 @@ def fetch_census_data(
     pd.DataFrame
         A DataFrame containing the census data with relevant columns and calculated rates.
     """
-    print(
-        f"\n<<<<< Downloading census data for Philadelphia County (FIPS: {state_fips}{county_fips})\
-              >>>>>"
-    )
+    print(f"\n<<<<< Downloading census data for Philadelphia County >>>>>")
 
     # Variables Selected:
     # NAME: Geographic Area Name
