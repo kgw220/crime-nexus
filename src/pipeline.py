@@ -64,7 +64,7 @@ def main():
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
     # Part 1: Data Retrieval and Merging -----------------------------------------------------------
-    print("----------Starting data retrieval and merging----------")
+    print("📌📌📌📌📌📌📌📌📌📌vStarting data retrieval and merging!📌📌📌📌📌📌📌📌📌📌")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(
         table=CRIME_TABLE_NAME,
@@ -148,7 +148,7 @@ def main():
     final_crime_data = merge_crime_census(crime_df, gdf_tracts)
 
     # Merge all the data together
-    print("Merging crime, weather, and census data...")
+    print("<<<<< Merging crime, weather, and census data >>>>>")
     merged_df = pd.merge(
         final_crime_data, weather_df, left_on="dispatch_date_dt", right_on="date_dt", how="left"
     )
@@ -165,11 +165,10 @@ def main():
 
     # Print some information about the final merged DataFrame and check for nulls
     print("Merged Data: ")
-    print(final_merged_df.head())
-    print(final_merged_df.info())
     min_date = final_merged_df["dispatch_date"].min()
     max_date = final_merged_df["dispatch_date"].max()
     print(f"\n<<<<< 📝Final merged DataFrame contains data from {min_date} to {max_date}📝 >>>>>")
+    print(final_merged_df.info())
     assert final_merged_df.isnull().sum().sum() == 0, "🚨DataFrame contains null values.🚨"
 
     # Save just crime data from the latest date (END_DATE);
@@ -193,10 +192,10 @@ def main():
     # Construct the full output path and save the file
     output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
     yesterday_crime.to_pickle(output_path)
-    print(f"Yesterday's crime data saved to {output_path}")
+    print(f"💾Yesterday's crime data saved to {output_path}💾")
 
-    # Part 2: Clustering- --------------------------------------------------------------------------
-    print("---------- Data has been merged! Starting clustering part of pipeline----------")
+    # Part 2: Clustering----------------------------------------------------------------------------
+    print("📌📌📌📌📌📌📌📌📌📌Starting clustering part of pipeline!📌📌📌📌📌📌📌📌📌📌")
 
     # Prepare the MLFlow experiment and get the name
     exp_name = prepare_experiment(RUN_RETENTION_DAYS)
