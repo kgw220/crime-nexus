@@ -678,7 +678,7 @@ def run_tpe_search(
     search_space: dict
         The search space dictionary
     """
-    print(f" <<<<< Starting hyperparameter search for {max_evals} evaluations using TPE >>>>>")
+    print(f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎")
 
     # Prepare data for clustering
     scaler = StandardScaler()
@@ -746,8 +746,9 @@ def run_tpe_search(
             num_clusters = len(set(labels)) - (1 if -1 in labels else 0)
             custom_score = (dbcv_score - noise_prop) - (0.1 * np.log1p(num_clusters))
 
-            print(f"Trial complete. Custom Score: {custom_score:.4f}")
+            print(f"<<<<< Trial complete. Custom Score: {custom_score:.4f} >>>>>")
             mlflow.log_metric("custom_score", custom_score)
+            mlflow.log_metric("loss", -custom_score)
             mlflow.log_metric("dbcv_score", dbcv_score)
             mlflow.log_metric("noise_proportion", noise_prop)
             mlflow.log_metric("num_clusters", num_clusters)
@@ -795,11 +796,15 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     if best_run.empty:
         raise Exception("No runs found in the experiment. Cannot determine best parameters.")
 
+    best_run_name = best_run["tags.mlflow.runName"].iloc[0]
+
     # Extract the set of best parameters
     best_params = best_run.filter(regex="params\..*").to_dict("records")[0]
     best_params = {key.replace("params.", ""): value for key, value in best_params.items()}
 
-    print(f"Best parameters found: {best_params}")
+    print(f"<<<<< Best run: {best_run_name} >>>>>")
+    print(f"<<<<< Best parameters found: {best_params} >>>>>")
+
     return best_params
 
 
@@ -880,10 +885,8 @@ def run_final_pipeline(
         high_quality_clusters = mean_probs[mean_probs > prob_threshold].head(max_clusters)
         df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
-        print(
-            f"\nFiltered final data to {len(df_high_quality)} points in \
-                {len(high_quality_clusters)} high-quality clusters."
-        )
+        print(f"\nFiltered final data to {len(df_high_quality)} points")
+        print(f"{len(high_quality_clusters)} high-quality clusters.")
     else:
         print("No high-quality clusters found in the final run.")
 
