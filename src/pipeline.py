@@ -64,7 +64,7 @@ def main():
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
     # Part 1: Data Retrieval and Merging -----------------------------------------------------------
-    print("📌📌📌📌📌📌📌📌📌📌vStarting data retrieval and merging!📌📌📌📌📌📌📌📌📌📌")
+    print("📌📌📌📌📌📌📌📌📌📌Starting data retrieval and merging!📌📌📌📌📌📌📌📌📌📌")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(
         table=CRIME_TABLE_NAME,
@@ -164,7 +164,6 @@ def main():
     final_merged_df = merged_df.dropna()
 
     # Print some information about the final merged DataFrame and check for nulls
-    print("Merged Data: ")
     min_date = final_merged_df["dispatch_date"].min()
     max_date = final_merged_df["dispatch_date"].max()
     print(f"\n<<<<< 📝Final merged DataFrame contains data from {min_date} to {max_date}📝 >>>>>")
