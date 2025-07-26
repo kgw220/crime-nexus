@@ -494,15 +494,13 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     ----------
     crime_df: pd.DataFrame
         The DataFrame containing the cleaned crime data.
-    census_df: pd.DataFrame
-        The DataFrame containing the cleaned census data.
     census_tracts: gpd.GeoDataFrame
         The GeoDataFrame containing the census tracts geometries.
 
     Returns:
     -------
-    pd.DataFrame
-        A merged DataFrame containing crime and census data.
+    gpd.DataFrame
+        A merged GeoDataFrame containing crime and census data.
     """
     # Convert the crime DataFrame to a GeoDataFrame
     print("\n<<<<< Converting crime data to GeoDataFrame >>>>>")
@@ -551,19 +549,19 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     return final_crime_data
 
 
-def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
+def calculate_population_density(merged_df: gpd.DataFrame) -> gpd.DataFrame:
     """
     Calculates population density for each census tract in the merged DataFrame.
 
     Parameters:
     ----------
-    merged_df: pd.DataFrame
-        The DataFrame containing the merged crime, weather, and census data.
+    merged_df: gpd.DataFrame
+        The GeoDataFrame containing the merged crime, weather, and census data.
 
     Returns:
     -------
-    pd.DataFrame
-        The DataFrame with an additional column for population density.
+    gpd.DataFrame
+        The GeoDataFrame with an additional column for population density.
     """
     print("\n<<<<< Calculating population density >>>>>")
 
@@ -575,8 +573,6 @@ def calculate_population_density(merged_df: pd.DataFrame) -> pd.DataFrame:
     # Calculate density and fill any missing results with 0
     merged_df["pop_density_sq_km"] = merged_df["pop_total"] / merged_df["area_sq_km"]
     merged_df["pop_density_sq_km"] = merged_df["pop_density_sq_km"].fillna(0)
-
-    print("Population density calculated.")
 
     # Drop the land_area_sq_meters column as it's no longer needed
     merged_df = merged_df.drop(columns=["land_area_sq_meters"])
