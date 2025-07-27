@@ -54,7 +54,7 @@ def main():
     Main function to run the entire data pipeline from fetching to clustering.
     """
     # Define date range to collect data (using a 3-year rolling window up to yesterday)
-    END_DATE = datetime.now() - timedelta(days=1)
+    END_DATE = (datetime.now() - timedelta(days=1)).date()
     START_DATE = END_DATE - timedelta(days=3 * 365)
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
@@ -170,7 +170,7 @@ def main():
     # NOTE: Ideally, I would use all the merged data, but there seems to be a ~3 day delay with the
     # NOAA weather API (I receieve data from 7/24/25 on 7/27/25). This is not too important anyways,
     # since this is used as a second layer over the final clusters.
-    yesterday_crime = crime_df[crime_df["dispatch_date"] == END_DATE]
+    yesterday_crime = crime_df[crime_df["dispatch_date"].dt.date == END_DATE]
 
     print(f"<<<<< 📝Yesterday's recorded crimes:📝 >>>>>")
     print(f"There were {len(yesterday_crime)} recorded crimes!")
