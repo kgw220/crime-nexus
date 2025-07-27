@@ -275,6 +275,10 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
 
     # NOTE: The dates in weather_df are in UTC, while the dates in the crime dataframe are in EDT.
     # This is a mismatch, so I'll convert the dates here from UTC to EDT.
+    # NOTE: There is a ~3-4 day delay with the weather station data being updated in the API. This
+    # means that if I try and get data on July 27th, 2025 (EDT), then it is very likely the most
+    # recent weather data will be from July 24th, 2025 (UTC). However, EDT is 4 hours behind UTC, so
+    # the actual most recent weather data will be on July 23rd, 2025 (EDT).
 
     # Convert to UTC aware
     weather_df["datetime"] = pd.to_datetime(weather_df["date_dt"]).dt.tz_localize("UTC")
@@ -284,6 +288,15 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
 
     # Extract the date
     weather_df["date_dt"] = weather_df["datetime"].dt.date
+
+    # In very rare cases, a few dates have NaNs for some columns. I fill them in with 0's
+    fill_values = {
+        "avg_wind_speed_mph": 0,
+        "precipitation_inches": 0,
+        "snowfall_inches": 0,
+        "snow_depth_inches": 0,
+    }
+    weather_df = weather_df.fillna(value=fill_values)
 
     # Print out the date range of data
     min_date = weather_df["date_dt"].min()
