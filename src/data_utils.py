@@ -248,7 +248,8 @@ def fetch_weather_data(
 
 def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Cleans the weather data to prepare for analysis. This involves renaming columns for now.
+    Cleans the weather data to prepare for analysis. This involves renaming columns, and converting
+    timezones from UTC to EDT.
 
     Parameters:
     ----------
@@ -271,6 +272,18 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
         "TMIN": "min_temp_f",
     }
     weather_df = weather_df.rename(columns=weather_rename_map)
+
+    # NOTE: The dates in weather_df are in UTC, while the dates in the crime dataframe are in EDT.
+    # This is a mismatch, so I'll convert the dates here from UTC to EDT.
+
+    # Convert to UTC aware
+    weather_df["datetime"] = pd.to_datetime(weather_df["date_dt"]).dt.tz_localize("UTC")
+
+    # Convert from UTC to the correct local timezone for Philly
+    weather_df["datetime"] = weather_df["datetime"].dt.tz_convert("America/New_York")
+
+    # Extract the date
+    weather_df["date_dt"] = weather_df["datetime"].dt.date
 
     # Print out the date range of data
     min_date = weather_df["date_dt"].min()
