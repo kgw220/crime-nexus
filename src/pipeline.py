@@ -53,10 +53,6 @@ def main():
     """
     Main function to run the entire data pipeline from fetching to clustering.
     """
-
-    print(f"DEBUG: Using NOAA Token: '{NOAA_TOKEN}'")
-    print(f"DEBUG: Using Weather URL: '{WEATHER_URL}'")
-
     # Define date range to collect data (using a 3-year rolling window up to yesterday)
     END_DATE = datetime.now() - timedelta(days=1)
     START_DATE = END_DATE - timedelta(days=3 * 365)
