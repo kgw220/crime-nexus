@@ -486,7 +486,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     return gdf_tracts
 
 
-def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) -> pd.DataFrame:
+def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     Merges crime data with census data based on spatial join with census tracts.
 
@@ -499,7 +499,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
 
     Returns:
     -------
-    gpd.DataFrame
+    gpd.GeoDataFrame
         A merged GeoDataFrame containing crime and census data.
     """
     # Convert the crime DataFrame to a GeoDataFrame
@@ -549,18 +549,18 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     return final_crime_data
 
 
-def calculate_population_density(merged_df: gpd.DataFrame) -> gpd.DataFrame:
+def calculate_population_density(merged_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     Calculates population density for each census tract in the merged DataFrame.
 
     Parameters:
     ----------
-    merged_df: gpd.DataFrame
+    merged_df: gpd.GeoDataFrame
         The GeoDataFrame containing the merged crime, weather, and census data.
 
     Returns:
     -------
-    gpd.DataFrame
+    gpd.GeoDataFrame
         The GeoDataFrame with an additional column for population density.
     """
     print("\n<<<<< Calculating population density >>>>>")
