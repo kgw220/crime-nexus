@@ -284,10 +284,10 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     weather_df["datetime"] = pd.to_datetime(weather_df["date_dt"]).dt.tz_localize("UTC")
     # Convert from UTC to the correct local timezone for Philly
     weather_df["datetime"] = weather_df["datetime"].dt.tz_convert("America/New_York")
-    # Drop "datetime" column since it is no longer needed
-    weather_df = weather_df.drop(columns=['datetime'])
     # Extract the date
     weather_df["date_dt"] = weather_df["datetime"].dt.date
+    # Drop "datetime" column since it is no longer needed
+    weather_df = weather_df.drop(columns=['datetime'])
 
     # In very rare cases, a few dates have NaNs for some columns. I fill them in with 0's
     fill_values = {
