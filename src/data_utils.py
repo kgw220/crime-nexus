@@ -718,6 +718,7 @@ def run_tpe_search(
         "tract_id",
     ]
     df_umap_ready = df_scaled.drop(columns=columns_to_drop)
+    print(df_umap_ready.info())
 
     def objective(params: dict):
         """
