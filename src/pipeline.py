@@ -189,6 +189,9 @@ def main():
     yesterday_crime.to_pickle(output_path)
     print(f"💾Yesterday's crime data saved to {output_path}💾")
 
+    print(f"final_crime_data CRS: {final_crime_data.crs}")
+    print(f"merged_df CRS: {merged_df.crs}")
+    print(f"final_merged_df CRS: {final_merged_df.crs}")
     # Part 2: Clustering----------------------------------------------------------------------------
     print("📌📌📌📌📌📌📌📌📌📌Starting clustering part of pipeline!📌📌📌📌📌📌📌📌📌📌")
 
