@@ -188,7 +188,6 @@ def main():
     output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
     yesterday_crime.to_pickle(output_path)
     print(f"💾Yesterday's crime data saved to {output_path}💾")
-
     # Part 2: Clustering----------------------------------------------------------------------------
     print("📌📌📌📌📌📌📌📌📌📌Starting clustering part of pipeline!📌📌📌📌📌📌📌📌📌📌")
 
