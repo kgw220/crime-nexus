@@ -42,7 +42,6 @@ from config import (
     CENSUS_SHAPE_URL,
     RUN_RETENTION_DAYS,
     NUM_EXPERIMENT_EVALS,
-    PROBABILITY_THRESHOLD,
     SEARCH_SPACE,
     HQ_CLUSTER_LIMIT,
     RANDOM_SEED,
@@ -60,6 +59,7 @@ def main():
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
     # Part 1: Data Retrieval and Merging -----------------------------------------------------------
+
     print("📌📌📌📌📌📌📌📌📌📌Starting data retrieval and merging!📌📌📌📌📌📌📌📌📌📌")
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(
@@ -185,10 +185,17 @@ def main():
     os.makedirs(data_dir, exist_ok=True)
 
     # Construct the full output path and save the file
-    output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
-    yesterday_crime.to_pickle(output_path)
-    print(f"💾Yesterday's crime data saved to {output_path}💾")
+    recent_crime_output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
+    yesterday_crime.to_pickle(recent_crime_output_path)
+    print(f"💾Yesterday's crime data saved to {recent_crime_output_path}💾")
+
+    # Save the merged data from entire 3-year rolling window (for hotspot analysis)
+    merged_output_path = os.path.join(data_dir, f"merged_data_{START_STR}_to_{END_STR}.pkl")
+    final_merged_df.to_pickle(merged_output_path)
+    print(f"💾Merged crime data saved to {merged_output_path}💾")
+
     # Part 2: Clustering----------------------------------------------------------------------------
+
     print("📌📌📌📌📌📌📌📌📌📌Starting clustering part of pipeline!📌📌📌📌📌📌📌📌📌📌")
 
     # Prepare the MLFlow experiment and get the name
@@ -218,13 +225,12 @@ def main():
         best_params=best_params,
         seed=RANDOM_SEED,
         max_clusters=HQ_CLUSTER_LIMIT,
-        prob_threshold=PROBABILITY_THRESHOLD,
     )
-    labeled_output_path = os.path.join(
+    labeled_merged_output_path = os.path.join(
         data_dir, f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl"
     )
-    df_final.to_pickle(labeled_output_path)
-    print(f"----------Final clustered data saved to {output_path}----------")
+    df_final.to_pickle(labeled_merged_output_path)
+    print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
 
 
 if __name__ == "__main__":
