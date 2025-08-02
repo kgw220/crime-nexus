@@ -92,6 +92,16 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     """
     Clean the crime data to prepare for analysis. This involves steps like one-hot encoding,
     removing NAs, renaming columns, and creating new features.
+
+    Parameters:
+    ----------
+    crime_df: pd.DataFrame
+        The pandas DataFrame returned from the function `fetch_crime_data`
+    
+    Returns:
+    -------
+    pd.DataFrame
+        The crime dataframe, cleaned with no NaNs, OHE'd columns, renamed columns, and new features.
     """
     print("\n<<<<< Cleaning crime data >>>>>")
 
@@ -179,6 +189,10 @@ def fetch_weather_data(
         The URL string where the data is collected from
     max_retries: int
         The number of retries if the request fails initially
+
+    Returns:
+    pd.DataFrame
+        A pandas DataFrame with daily weather data for the selected variables.
     """
     print(f"\n<<<<< Fetching weather from {start_date} to {end_date} >>>>>")
 
@@ -327,7 +341,7 @@ def fetch_census_data(
         The number of times to make another attempt at the request, if it fails initially
 
     Returns:
-    --------
+    -------
     pd.DataFrame
         A DataFrame containing the census data with relevant columns and calculated rates.
     """
@@ -645,6 +659,7 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
     Deletes all runs in an MLFlow experiment that are older than the specified retention period.
 
     Parameters:
+    -----------
     experiment_id: str
         The string indicating the MLFlow experiment
     days_to_keep: int
@@ -832,8 +847,7 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
 
 
 def run_final_pipeline(
-    df: pd.DataFrame, best_params: dict, seed: int, max_clusters: int, prob_threshold: float
-) -> pd.DataFrame:
+    df: pd.DataFrame, best_params: dict, seed: int, max_clusters: int) -> pd.DataFrame:
     """
     Runs the clustering pipeline with the best hyperparameters from the MLFlow experiment,
     and saves the final output.
@@ -848,10 +862,9 @@ def run_final_pipeline(
         The RNG seed
     max_clusters: int
         The maximum number of HQ clusters in the case that there are an excess amount
-    prob_threshold: float
-        The probability threshold for the minimum average probability association for each cluster
 
     Returns:
+    --------
     pd.DataFrame
         The dataframe `df` with cluster labels, filtered down to the observations with the most
         confident clusters
@@ -905,7 +918,7 @@ def run_final_pipeline(
 
     if not prob_df.empty:
         mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
-        high_quality_clusters = mean_probs[mean_probs > prob_threshold].head(max_clusters)
+        high_quality_clusters = mean_probs.head(max_clusters)
         df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
         print(f"\nFiltered final data to {len(df_high_quality)} points")
