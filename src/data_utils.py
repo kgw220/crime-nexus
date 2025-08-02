@@ -521,7 +521,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     # Load the GeoJSON response directly into a GeoDataFrame
     gdf_tracts = gpd.GeoDataFrame.from_features(response.json()["features"])
     # Set the coordinate reference system, which is standard for web data
-    gdf_tracts = gdf_tracts.set_crs("EPSG:4326").to_crs("EPSG:2272")
+    gdf_tracts = gdf_tracts.set_crs("EPSG:4326")
 
     return gdf_tracts
 
@@ -547,7 +547,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     crime_gdf = gpd.GeoDataFrame(
         crime_df,
         geometry=gpd.points_from_xy(crime_df["lon"], crime_df["lat"]),
-        crs="EPSG:2272",
+        crs="EPSG:4326", # Match the CRS from census tract data for proper joining
     )
 
     # Perform the spatial join
