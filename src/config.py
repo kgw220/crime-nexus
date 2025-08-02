@@ -29,9 +29,6 @@ CENSUS_SHAPE_URL = (
 PHILLY_COUNTY_FIPS = "101"
 PA_STATE_FIPS = "42"
 
-# Probability threshold for clustering
-PROBABILITY_THRESHOLD = 0.95
-
 # Hyperopt space
 SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
