@@ -521,7 +521,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     # Load the GeoJSON response directly into a GeoDataFrame
     gdf_tracts = gpd.GeoDataFrame.from_features(response.json()["features"])
     # Set the coordinate reference system, which is standard for web data
-    gdf_tracts = gdf_tracts.set_crs("EPSG:2272")
+    gdf_tracts = gdf_tracts.set_crs("EPSG:4326").to_crs("EPSG:2272")
 
     return gdf_tracts
 
