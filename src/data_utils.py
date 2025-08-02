@@ -79,12 +79,16 @@ def fetch_crime_data(
         try:
             response = requests.get(carto_url, params={"q": query}, timeout=60)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error"
+                )
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
             wait_time = 2**retries
-            print(f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s...")
+            print(
+                f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s..."
+            )
             time.sleep(wait_time)
             retries += 1
 
@@ -107,7 +111,7 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     ----------
     crime_df: pd.DataFrame
         The pandas DataFrame returned from the function `fetch_crime_data`
-    
+
     Returns:
     -------
     pd.DataFrame
@@ -237,9 +241,13 @@ def fetch_weather_data(
         retries = 0
         while retries < max_retries:
             try:
-                response = requests.get(weather_url, headers=headers, params=params, timeout=20)
+                response = requests.get(
+                    weather_url, headers=headers, params=params, timeout=20
+                )
                 if response.status_code in [500, 502, 503, 504]:
-                    raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                    raise requests.exceptions.HTTPError(
+                        f"{response.status_code} Server Error"
+                    )
                 response.raise_for_status()
                 break
             except requests.exceptions.RequestException as e:
@@ -265,7 +273,9 @@ def fetch_weather_data(
     if df.empty:
         return pd.DataFrame()
     df["date_dt"] = pd.to_datetime(df["date"]).dt.date
-    weather_df = df.pivot_table(index="date_dt", columns="datatype", values="value").reset_index()
+    weather_df = df.pivot_table(
+        index="date_dt", columns="datatype", values="value"
+    ).reset_index()
 
     return weather_df
 
@@ -311,7 +321,7 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     # Extract the date
     weather_df["date_dt"] = weather_df["datetime"].dt.date
     # Drop "datetime" column since it is no longer needed
-    weather_df = weather_df.drop(columns=['datetime'])
+    weather_df = weather_df.drop(columns=["datetime"])
 
     # In very rare cases, a few dates have NaNs for some columns. I fill them in with 0's
     fill_values = {
@@ -331,7 +341,11 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_census_data(
-    state_fips: str, county_fips: str, token: str, census_api_url: str, max_retries: int = 5
+    state_fips: str,
+    county_fips: str,
+    token: str,
+    census_api_url: str,
+    max_retries: int = 5,
 ) -> pd.DataFrame:
     """
     Downloads and processes ACS 5-Year data for all tracts in a county, including calculation of key
@@ -389,12 +403,16 @@ def fetch_census_data(
         try:
             response = requests.get(census_api_url, params=params, timeout=20)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error"
+                )
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
             wait_time = 2**retries
-            print(f"Warning: Census API request failed ({e}). Retrying in {wait_time}s...")
+            print(
+                f"Warning: Census API request failed ({e}). Retrying in {wait_time}s..."
+            )
             time.sleep(wait_time)
             retries += 1
 
@@ -461,10 +479,16 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     # Calculate new features which are useful for the clustering task
     # Replace zeros with NaN to prevent division errors
     census_df["pop_total"] = census_df["pop_total"].replace(0, np.nan)
-    census_df["total_housing_units"] = census_df["total_housing_units"].replace(0, np.nan)
-    census_df["total_occupied_units"] = census_df["total_occupied_units"].replace(0, np.nan)
+    census_df["total_housing_units"] = census_df["total_housing_units"].replace(
+        0, np.nan
+    )
+    census_df["total_occupied_units"] = census_df["total_occupied_units"].replace(
+        0, np.nan
+    )
     census_df["poverty_rate"] = census_df["poverty_total"] / census_df["pop_total"]
-    census_df["vacancy_rate"] = census_df["vacant_housing_units"] / census_df["total_housing_units"]
+    census_df["vacancy_rate"] = (
+        census_df["vacant_housing_units"] / census_df["total_housing_units"]
+    )
     census_df["renter_occupancy_rate"] = (
         census_df["renter_occupied_units"] / census_df["total_occupied_units"]
     )
@@ -473,7 +497,9 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     rate_cols = ["poverty_rate", "vacancy_rate", "renter_occupancy_rate"]
     census_df[rate_cols] = census_df[rate_cols].fillna(0)
 
-    print(f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>")
+    print(
+        f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>"
+    )
 
     # Return the final, clean set of columns
     final_columns = [
@@ -515,7 +541,9 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
         try:
             response = requests.get(census_shape_url, timeout=20)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error"
+                )
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
@@ -536,7 +564,9 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     return gdf_tracts
 
 
-def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def merge_crime_census(
+    crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame
+) -> gpd.GeoDataFrame:
     """
     Merges crime data with census data based on spatial join with census tracts.
 
@@ -557,7 +587,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     crime_gdf = gpd.GeoDataFrame(
         crime_df,
         geometry=gpd.points_from_xy(crime_df["lon"], crime_df["lat"]),
-        crs="EPSG:4326", # Match the CRS from census tract data for proper joining
+        crs="EPSG:4326",  # Match the CRS from census tract data for proper joining
     )
 
     # Perform the spatial join
@@ -568,9 +598,13 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
         final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", op="within")
     except TypeError:
         # For older GeoPandas versions
-        final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", predicate="within")
+        final_crime_data = gpd.sjoin(
+            crime_gdf, census_tracts, how="inner", predicate="within"
+        )
 
-    print("\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>")
+    print(
+        "\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>"
+    )
 
     # Clean up the final DataFrame
     final_crime_data = final_crime_data.drop(
@@ -707,7 +741,11 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
 
 
 def run_tpe_search(
-    df: pd.DataFrame, seed: int, max_evals: int, pipeline_run_id: str, search_space: dict
+    df: pd.DataFrame,
+    seed: int,
+    max_evals: int,
+    pipeline_run_id: str,
+    search_space: dict,
 ):
     """
     Runs a hyperparameter search using Hyperopt's TPE algorithm, logging results to MLFlow.
@@ -725,13 +763,17 @@ def run_tpe_search(
     search_space: dict
         The search space dictionary
     """
-    print(f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎")
+    print(
+        f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎"
+    )
 
     # Prepare data for clustering
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
+    cols_to_scale = [
+        col for col in numeric_cols if "_sin" not in col and "_cos" not in col
+    ]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     columns_to_drop = [
@@ -743,7 +785,6 @@ def run_tpe_search(
         "tract_id",
     ]
     df_umap_ready = df_scaled.drop(columns=columns_to_drop)
-    
 
     def objective(params: dict):
         """
@@ -842,13 +883,17 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     )
 
     if best_run.empty:
-        raise Exception("No runs found in the experiment. Cannot determine best parameters.")
+        raise Exception(
+            "No runs found in the experiment. Cannot determine best parameters."
+        )
 
     best_run_name = best_run["tags.mlflow.runName"].iloc[0]
 
     # Extract the set of best parameters
     best_params = best_run.filter(regex="params\..*").to_dict("records")[0]
-    best_params = {key.replace("params.", ""): value for key, value in best_params.items()}
+    best_params = {
+        key.replace("params.", ""): value for key, value in best_params.items()
+    }
 
     print(f"<<<<< Best run: {best_run_name} >>>>>")
     print(f"<<<<< Best parameters found: {best_params} >>>>>")
@@ -857,7 +902,8 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
 
 
 def run_final_pipeline(
-    df: pd.DataFrame, best_params: dict, seed: int, max_clusters: int) -> pd.DataFrame:
+    df: pd.DataFrame, best_params: dict, seed: int, max_clusters: int
+) -> pd.DataFrame:
     """
     Runs the clustering pipeline with the best hyperparameters from the MLFlow experiment,
     and saves the final output.
@@ -879,13 +925,17 @@ def run_final_pipeline(
         The dataframe `df` with cluster labels, filtered down to the observations with the most
         confident clusters
     """
-    print(f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>")
+    print(
+        f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>"
+    )
 
     # Preprocess the data as before
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
+    cols_to_scale = [
+        col for col in numeric_cols if "_sin" not in col and "_cos" not in col
+    ]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     columns_to_drop = [
@@ -928,12 +978,18 @@ def run_final_pipeline(
     prob_df = prob_df[prob_df["label"] != -1]
 
     if not prob_df.empty:
-        mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
+        mean_probs = (
+            prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
+        )
         high_quality_clusters = mean_probs.head(max_clusters)
-        df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
+        df_high_quality = df[
+            df["cluster_label"].isin(high_quality_clusters.index)
+        ].copy()
 
         print(f"\n <<<<< Filtered final data to {len(df_high_quality)} points. >>>>>")
-        print(f"\n <<<<< Retrieved {len(high_quality_clusters)} high-quality clusters. >>>>>")
+        print(
+            f"\n <<<<< Retrieved {len(high_quality_clusters)} high-quality clusters. >>>>>"
+        )
     else:
         print("<<<<< No high-quality clusters found in the final run. >>>>>")
 
@@ -1219,8 +1275,8 @@ def plot_hotspot_analysis(
     # Select only the necessary columns to prevent JSON serialization errors
     hotspot_data_for_viz = hotspot_grid_for_plot[["index", "z_score", "geometry"]]
 
-    # Create a Choropleth layer for the hotspots; The reversed red/blue colormap is used, so 
-    # hotspots (identified with darker red) are shown with a higher z score, and coldspots 
+    # Create a Choropleth layer for the hotspots; The reversed red/blue colormap is used, so
+    # hotspots (identified with darker red) are shown with a higher z score, and coldspots
     # (identified with blue) are shown with a negative/near zero z score.
     chlorpleth = folium.Choropleth(
         geo_data=hotspot_data_for_viz.to_crs("EPSG:4326"),
@@ -1235,7 +1291,7 @@ def plot_hotspot_analysis(
         highlight=True,
     ).add_to(m)
 
-    # Add CSS for formatting the chlorpleth legend, so it stands out better with the background of 
+    # Add CSS for formatting the chlorpleth legend, so it stands out better with the background of
     # the map
     legend_css = """
     <style>
