@@ -60,7 +60,9 @@ def main():
 
     # Part 1: Data Retrieval and Merging -----------------------------------------------------------
 
-    print("📌📌📌📌📌📌📌📌📌📌Starting data retrieval and merging!📌📌📌📌📌📌📌📌📌📌")
+    print(
+        "📌📌📌📌📌📌📌📌📌📌Starting data retrieval and merging!📌📌📌📌📌📌📌📌📌📌"
+    )
     # Fetch and clean the data from the various sources
     crime_df = fetch_crime_data(
         table=CRIME_TABLE_NAME,
@@ -109,7 +111,9 @@ def main():
             (weather_df["date_dt_obj"] >= pd.to_datetime(START_STR))
             & (weather_df["date_dt_obj"] <= pd.to_datetime(END_STR))
         ].drop(columns=["date_dt_obj"])
-        print(f"\n<<<<< Successfully combined weather data for {len(weather_df)} days. >>>>>")
+        print(
+            f"\n<<<<< Successfully combined weather data for {len(weather_df)} days. >>>>>"
+        )
     else:
         print("\n <<<<< No weather data could be downloaded. >>>>>")
         weather_df = pd.DataFrame()
@@ -146,7 +150,11 @@ def main():
     # Merge all the data together
     print("<<<<< Merging crime, weather, and census data >>>>>")
     merged_df = pd.merge(
-        final_crime_data, weather_df, left_on="dispatch_date_dt", right_on="date_dt", how="left"
+        final_crime_data,
+        weather_df,
+        left_on="dispatch_date_dt",
+        right_on="date_dt",
+        how="left",
     )
     merged_df = pd.merge(
         merged_df, census_df, left_on="tract_id", right_on="tract_fips", how="left"
@@ -162,9 +170,13 @@ def main():
     # Print some information about the final merged DataFrame and check for nulls
     min_date = final_merged_df["dispatch_date"].min()
     max_date = final_merged_df["dispatch_date"].max()
-    print(f"\n<<<<< 📝Final merged DataFrame contains data from {min_date} to {max_date}📝 >>>>>")
+    print(
+        f"\n<<<<< 📝Final merged DataFrame contains data from {min_date} to {max_date}📝 >>>>>"
+    )
     print(final_merged_df.info())
-    assert final_merged_df.isnull().sum().sum() == 0, "🚨DataFrame contains null values.🚨"
+    assert (
+        final_merged_df.isnull().sum().sum() == 0
+    ), "🚨DataFrame contains null values.🚨"
 
     # Save just crime data from the latest date (END_DATE);
     # NOTE: Ideally, I would use all the merged data, but there seems to be a ~3 day delay with the
@@ -190,13 +202,17 @@ def main():
     print(f"💾Yesterday's crime data saved to {recent_crime_output_path}💾")
 
     # Save the merged data from entire 3-year rolling window (for hotspot analysis)
-    merged_output_path = os.path.join(data_dir, f"merged_data_{START_STR}_to_{END_STR}.pkl")
+    merged_output_path = os.path.join(
+        data_dir, f"merged_data_{START_STR}_to_{END_STR}.pkl"
+    )
     final_merged_df.to_pickle(merged_output_path)
     print(f"💾Merged crime data saved to {merged_output_path}💾")
 
     # Part 2: Clustering----------------------------------------------------------------------------
 
-    print("📌📌📌📌📌📌📌📌📌📌Starting clustering part of pipeline!📌📌📌📌📌📌📌📌📌📌")
+    print(
+        "📌📌📌📌📌📌📌📌📌📌Starting clustering part of pipeline!📌📌📌📌📌📌📌📌📌📌"
+    )
 
     # Prepare the MLFlow experiment and get the name
     exp_name = prepare_experiment(RUN_RETENTION_DAYS)
@@ -230,7 +246,9 @@ def main():
         data_dir, f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl"
     )
     df_final.to_pickle(labeled_merged_output_path)
-    print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
+    print(
+        f"----------Final clustered data saved to {labeled_merged_output_path}----------"
+    )
 
 
 if __name__ == "__main__":
