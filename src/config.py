@@ -53,3 +53,10 @@ HQ_CLUSTER_LIMIT = 10
 
 # Random seed to get the psuedo random number generator
 RANDOM_SEED = 42
+
+# The URL to the boundary geojson file for the city of Philadelphia
+BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
+
+# The DBSCAN threshold for how many feet crime has to be close by, to be put in the same cluster 
+# outline
+DISTANCE_THRESHOLD = 1000
