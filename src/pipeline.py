@@ -204,7 +204,7 @@ def main():
     # Create a unique ID for this specific pipeline execution; This will be used to identify which
     # runs were ran the day the script was ran
     pipeline_run_id = str(uuid.uuid4())
-    print(f"🪪The unique pipeline ID for today is {pipeline_run_id}🪪")
+    print(f"The unique pipeline ID for today is {pipeline_run_id}")
 
     # Run the TPE hyperparameter search
     run_tpe_search(
