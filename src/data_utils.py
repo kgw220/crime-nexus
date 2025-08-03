@@ -5,6 +5,7 @@ Related utilies for data collecting, wrangling, and clustering for the crime-nex
 import folium
 import geopandas as gpd
 import hdbscan
+import io
 import mlflow
 import numpy as np
 import os
@@ -13,6 +14,8 @@ import random
 import requests
 import time
 import umap
+import zipfile
+
 
 from branca.element import Element
 from datetime import datetime, timedelta
@@ -23,6 +26,7 @@ from pysal.lib import weights
 from shapely.geometry import MultiPoint, Polygon
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
+from typing import Union
 
 
 # Define functions for retrieving and wrangling data ----------------------------------------------
@@ -79,16 +83,12 @@ def fetch_crime_data(
         try:
             response = requests.get(carto_url, params={"q": query}, timeout=60)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(
-                    f"{response.status_code} Server Error"
-                )
+                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
             wait_time = 2**retries
-            print(
-                f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s..."
-            )
+            print(f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s...")
             time.sleep(wait_time)
             retries += 1
 
@@ -241,13 +241,9 @@ def fetch_weather_data(
         retries = 0
         while retries < max_retries:
             try:
-                response = requests.get(
-                    weather_url, headers=headers, params=params, timeout=20
-                )
+                response = requests.get(weather_url, headers=headers, params=params, timeout=20)
                 if response.status_code in [500, 502, 503, 504]:
-                    raise requests.exceptions.HTTPError(
-                        f"{response.status_code} Server Error"
-                    )
+                    raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
                 response.raise_for_status()
                 break
             except requests.exceptions.RequestException as e:
@@ -273,9 +269,7 @@ def fetch_weather_data(
     if df.empty:
         return pd.DataFrame()
     df["date_dt"] = pd.to_datetime(df["date"]).dt.date
-    weather_df = df.pivot_table(
-        index="date_dt", columns="datatype", values="value"
-    ).reset_index()
+    weather_df = df.pivot_table(index="date_dt", columns="datatype", values="value").reset_index()
 
     return weather_df
 
@@ -403,16 +397,12 @@ def fetch_census_data(
         try:
             response = requests.get(census_api_url, params=params, timeout=20)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(
-                    f"{response.status_code} Server Error"
-                )
+                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
             wait_time = 2**retries
-            print(
-                f"Warning: Census API request failed ({e}). Retrying in {wait_time}s..."
-            )
+            print(f"Warning: Census API request failed ({e}). Retrying in {wait_time}s...")
             time.sleep(wait_time)
             retries += 1
 
@@ -479,16 +469,10 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     # Calculate new features which are useful for the clustering task
     # Replace zeros with NaN to prevent division errors
     census_df["pop_total"] = census_df["pop_total"].replace(0, np.nan)
-    census_df["total_housing_units"] = census_df["total_housing_units"].replace(
-        0, np.nan
-    )
-    census_df["total_occupied_units"] = census_df["total_occupied_units"].replace(
-        0, np.nan
-    )
+    census_df["total_housing_units"] = census_df["total_housing_units"].replace(0, np.nan)
+    census_df["total_occupied_units"] = census_df["total_occupied_units"].replace(0, np.nan)
     census_df["poverty_rate"] = census_df["poverty_total"] / census_df["pop_total"]
-    census_df["vacancy_rate"] = (
-        census_df["vacant_housing_units"] / census_df["total_housing_units"]
-    )
+    census_df["vacancy_rate"] = census_df["vacant_housing_units"] / census_df["total_housing_units"]
     census_df["renter_occupancy_rate"] = (
         census_df["renter_occupied_units"] / census_df["total_occupied_units"]
     )
@@ -497,9 +481,7 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     rate_cols = ["poverty_rate", "vacancy_rate", "renter_occupancy_rate"]
     census_df[rate_cols] = census_df[rate_cols].fillna(0)
 
-    print(
-        f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>"
-    )
+    print(f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>")
 
     # Return the final, clean set of columns
     final_columns = [
@@ -541,9 +523,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
         try:
             response = requests.get(census_shape_url, timeout=20)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(
-                    f"{response.status_code} Server Error"
-                )
+                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
@@ -564,9 +544,7 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     return gdf_tracts
 
 
-def merge_crime_census(
-    crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame
-) -> gpd.GeoDataFrame:
+def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     Merges crime data with census data based on spatial join with census tracts.
 
@@ -598,13 +576,9 @@ def merge_crime_census(
         final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", op="within")
     except TypeError:
         # For older GeoPandas versions
-        final_crime_data = gpd.sjoin(
-            crime_gdf, census_tracts, how="inner", predicate="within"
-        )
+        final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", predicate="within")
 
-    print(
-        "\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>"
-    )
+    print("\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>")
 
     # Clean up the final DataFrame
     final_crime_data = final_crime_data.drop(
@@ -763,17 +737,13 @@ def run_tpe_search(
     search_space: dict
         The search space dictionary
     """
-    print(
-        f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎"
-    )
+    print(f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎")
 
     # Prepare data for clustering
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    cols_to_scale = [
-        col for col in numeric_cols if "_sin" not in col and "_cos" not in col
-    ]
+    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     columns_to_drop = [
@@ -883,17 +853,13 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     )
 
     if best_run.empty:
-        raise Exception(
-            "No runs found in the experiment. Cannot determine best parameters."
-        )
+        raise Exception("No runs found in the experiment. Cannot determine best parameters.")
 
     best_run_name = best_run["tags.mlflow.runName"].iloc[0]
 
     # Extract the set of best parameters
     best_params = best_run.filter(regex="params\..*").to_dict("records")[0]
-    best_params = {
-        key.replace("params.", ""): value for key, value in best_params.items()
-    }
+    best_params = {key.replace("params.", ""): value for key, value in best_params.items()}
 
     print(f"<<<<< Best run: {best_run_name} >>>>>")
     print(f"<<<<< Best parameters found: {best_params} >>>>>")
@@ -925,17 +891,13 @@ def run_final_pipeline(
         The dataframe `df` with cluster labels, filtered down to the observations with the most
         confident clusters
     """
-    print(
-        f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>"
-    )
+    print(f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>")
 
     # Preprocess the data as before
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    cols_to_scale = [
-        col for col in numeric_cols if "_sin" not in col and "_cos" not in col
-    ]
+    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     columns_to_drop = [
@@ -978,22 +940,157 @@ def run_final_pipeline(
     prob_df = prob_df[prob_df["label"] != -1]
 
     if not prob_df.empty:
-        mean_probs = (
-            prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
-        )
+        mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
         high_quality_clusters = mean_probs.head(max_clusters)
-        df_high_quality = df[
-            df["cluster_label"].isin(high_quality_clusters.index)
-        ].copy()
+        df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
 
         print(f"\n <<<<< Filtered final data to {len(df_high_quality)} points. >>>>>")
-        print(
-            f"\n <<<<< Retrieved {len(high_quality_clusters)} high-quality clusters. >>>>>"
-        )
+        print(f"\n <<<<< Retrieved {len(high_quality_clusters)} high-quality clusters. >>>>>")
     else:
         print("<<<<< No high-quality clusters found in the final run. >>>>>")
 
     return df_high_quality
+
+
+# Define functions regarding pulling the saved data from the pipeline ------------------------------
+
+
+def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
+    """
+    Finds and loads a pickle file from a folder based on a filename prefix.
+
+    Parameters:
+    ----------
+    folder: str
+        The directory to search for the file
+    prefix: str
+        The starting string of the filename to find
+
+    Returns:
+    -------
+    Union[pd.DataFrame, gpd.GeoDataFrame]:
+        The loaded data from the pickle file, which can be either a pandas or geopandas DataFrame
+
+    Raises:
+    ------
+    FileNotFoundError:
+        If no file with the specified prefix is found
+    """
+    matches = [f for f in os.listdir(folder) if f.startswith(prefix)]
+    if not matches:
+        raise FileNotFoundError(f"No file with prefix '{prefix}' found in {folder}")
+    file_path = os.path.join(folder, matches[0])
+
+    print(f"Loading file: {file_path}")
+    df = pd.read_pickle(file_path)
+
+    return df
+
+
+def get_latest_github_artifact_data(
+    repo_name: str,
+    workflow_filename: str,
+    artifact_name: str,
+    github_token: str,
+    output_dir: str = "data",
+) -> tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """
+    Downloads the latest artifact from a GitHub Actions workflow and loads the data.
+
+    This function authenticates with the GitHub API, finds the latest successful
+    run of a specified workflow, downloads the specified artifact, extracts its
+    contents, and loads the data into DataFrames/GeoDataFrames.
+
+    Note that this is done since at least one data file will be recorded by LFS, meaning that
+    streamlit cannot access it directly like smaller files. I have saved the data as an artifact to
+    work around this.
+
+    Parameters:
+    ----------
+    repo_name: str
+        The GitHub repository in the format "owner/repo"
+    workflow_filename: str
+        The filename of the workflow (e.g., "daily_run.yml")
+    artifact_name: str
+        The name of the artifact to
+    github_token: str
+        The token to connect to the GitHub API
+    output_dir: str
+        The local directory to extract files into
+
+    Returns:
+    -------
+    tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]
+        A tuple of the crime data as a pandas DataFrame, a geopandas GeoDataFrame of the merged
+        data with the cluster labels, and a geopandas GeoDataFrame of the merged data without
+        cluster labels
+
+    Raises:
+    -------
+    ValueError:
+        If the GITHUB_TOKEN environment variable is not set
+    RuntimeError:
+        If no successful workflow runs are found
+    FileNotFoundError:
+        If the specified artifact or data files are not found
+    requests.exceptions.HTTPError:
+        If an API request fails
+    """
+    # Setup call with GitHub token
+    headers = {}
+    headers["Authorization"] = f"Bearer {github_token}"
+
+    # Get latest successful workflow run ID
+    print("\nFetching latest successful workflow run...")
+    runs_url = f"https://api.github.com/repos/{repo_name}/actions/workflows/{workflow_filename}/runs?status=success&per_page=1"
+    runs_resp = requests.get(runs_url, headers=headers)
+    runs_resp.raise_for_status()
+    workflow_runs = runs_resp.json().get("workflow_runs", [])
+    if not workflow_runs:
+        raise RuntimeError("No successful workflow runs found.")
+    run_id = workflow_runs[0]["id"]
+    latest_run = workflow_runs[0]
+    run_date = latest_run["created_at"]
+    print(f"Found latest run ID: {run_id} (Created at: {run_date})")
+
+    # Get artifacts for the latest run
+    print(f"Fetching artifacts for run ID: {run_id}...")
+    artifact_url = f"https://api.github.com/repos/{repo_name}/actions/runs/{run_id}/artifacts"
+    artifact_resp = requests.get(artifact_url, headers=headers)
+    artifact_resp.raise_for_status()
+
+    # Find the correct artifact by name
+    artifacts = artifact_resp.json().get("artifacts", [])
+    if not artifacts:
+        raise FileNotFoundError("No artifacts found for the latest run.")
+    try:
+        artifact = next(a for a in artifacts if a["name"] == artifact_name)
+        print(f"Found artifact: '{artifact_name}' (ID: {artifact['id']})")
+    except StopIteration:
+        raise FileNotFoundError(f"Artifact with name '{artifact_name}' not found.")
+
+    # Download the artifact ZIP
+    print("Downloading artifact ZIP...")
+    download_url = artifact["archive_download_url"]
+    zip_resp = requests.get(download_url, headers=headers, allow_redirects=True)
+    zip_resp.raise_for_status()
+    print("Download complete.")
+
+    # Extract contents into a local folder
+    print(f"Extracting files to '{output_dir}' folder...")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    with zipfile.ZipFile(io.BytesIO(zip_resp.content)) as z:
+        z.extractall(output_dir)
+    print("Extraction complete.")
+
+    # Finally, load the data from the directory based on the prefix
+    print("\nLoading dataframes from extracted files...")
+    crime_df = load_pickle_by_prefix(output_dir, "crime_data")
+    labeled_df = load_pickle_by_prefix(output_dir, "labeled_merged_data")
+    merged_df = load_pickle_by_prefix(output_dir, "merged_data")
+
+    return crime_df, labeled_df, merged_df
 
 
 # Define functions regarding mapping the data ------------------------------------------------------
@@ -1121,9 +1218,7 @@ def plot_cluster_outlines(
             centroid_proj = hull.centroid
 
             # Find the most common crime type in this sub-group
-            sub_group_crime_cols = [
-                col for col in sub_group.columns if col.startswith("crime_")
-            ]
+            sub_group_crime_cols = [col for col in sub_group.columns if col.startswith("crime_")]
             # Get the full column name of the most frequent crime
             dominant_crime_col = sub_group[sub_group_crime_cols].sum().idxmax()
             most_common_crime = dominant_crime_col.replace("crime_", "")
@@ -1153,9 +1248,7 @@ def plot_cluster_outlines(
             """
 
             # Convert hull back to lat/lon for plotting on Folium map
-            hull_gdf = gpd.GeoDataFrame([1], geometry=[hull], crs="EPSG:2272").to_crs(
-                "EPSG:4326"
-            )
+            hull_gdf = gpd.GeoDataFrame([1], geometry=[hull], crs="EPSG:2272").to_crs("EPSG:4326")
 
             # Add the outline to its layer
             folium.GeoJson(
@@ -1169,9 +1262,9 @@ def plot_cluster_outlines(
             ).add_to(cluster_outlines)
 
             # Convert centroid to lat/lon for the marker
-            centroid_gdf = gpd.GeoDataFrame(
-                [1], geometry=[centroid_proj], crs="EPSG:2272"
-            ).to_crs("EPSG:4326")
+            centroid_gdf = gpd.GeoDataFrame([1], geometry=[centroid_proj], crs="EPSG:2272").to_crs(
+                "EPSG:4326"
+            )
             centroid_latlon = [
                 centroid_gdf.geometry.y.iloc[0],
                 centroid_gdf.geometry.x.iloc[0],
@@ -1183,9 +1276,7 @@ def plot_cluster_outlines(
             # Add the representative icon to each layer
             folium.Marker(
                 location=centroid_latlon,
-                icon=folium.DivIcon(
-                    html=icon_html, icon_size=(24, 24), icon_anchor=(12, 12)
-                ),
+                icon=folium.DivIcon(html=icon_html, icon_size=(24, 24), icon_anchor=(12, 12)),
                 popup=popup_text,
             ).add_to(cluster_icons)
 
@@ -1245,9 +1336,7 @@ def plot_hotspot_analysis(
     # Count points from df_clustered in each grid cell
     joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
     crime_counts = joined.groupby("index_right").size().rename("n_crimes")
-    hotspot_grid = hotspot_grid.merge(
-        crime_counts, left_index=True, right_index=True, how="left"
-    )
+    hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
     hotspot_grid["n_crimes"].fillna(0, inplace=True)
     # Create a separate grid for the analysis containing only cells with crime
     analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
@@ -1265,9 +1354,7 @@ def plot_hotspot_analysis(
     hotspot_grid["z_score"].fillna(0, inplace=True)
 
     # Trim the grid to the Philadelphia boundary
-    hotspot_grid_trimmed = gpd.overlay(
-        hotspot_grid, philly_gdf_proj, how="intersection"
-    )
+    hotspot_grid_trimmed = gpd.overlay(hotspot_grid, philly_gdf_proj, how="intersection")
 
     # Reset the index to create a column that can be used as a key
     hotspot_grid_for_plot = hotspot_grid_trimmed.reset_index()
