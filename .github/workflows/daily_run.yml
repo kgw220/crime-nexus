@@ -84,3 +84,12 @@ jobs:
           git commit -m "Added HQ clustered data and yesterday's crime data" || echo "No changes to commit"
           # Push the changes to the repository's main branch.
           git push 
+
+      # Save the entire data directory as artifact. This is so any large files tracked with LFS can
+      # be loaded into streamlit, as any files tracked with LFS cannot be loaded directly
+      - name: Upload entire data directory as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-data
+          path: ./data/
+          retention-days: 30
