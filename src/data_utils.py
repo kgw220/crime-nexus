@@ -2,6 +2,7 @@
 Related utilies for data collecting, wrangling, and clustering for the crime-nexus project.
 """
 
+import folium
 import geopandas as gpd
 import hdbscan
 import mlflow
@@ -13,9 +14,18 @@ import requests
 import time
 import umap
 
+from branca.element import Element
 from datetime import datetime, timedelta
+from folium.plugins import MarkerCluster
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from pysal.explore import esda
+from pysal.lib import weights
+from shapely.geometry import MultiPoint, Polygon
+from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
+
+
+# Define functions for retrieving and wrangling data ----------------------------------------------
 
 
 def fetch_crime_data(
@@ -69,12 +79,16 @@ def fetch_crime_data(
         try:
             response = requests.get(carto_url, params={"q": query}, timeout=60)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error"
+                )
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
             wait_time = 2**retries
-            print(f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s...")
+            print(
+                f"Warning: Crime data request failed ({e}). Retrying in {wait_time}s..."
+            )
             time.sleep(wait_time)
             retries += 1
 
@@ -92,6 +106,16 @@ def clean_crime_data(crime_df: pd.DataFrame) -> pd.DataFrame:
     """
     Clean the crime data to prepare for analysis. This involves steps like one-hot encoding,
     removing NAs, renaming columns, and creating new features.
+
+    Parameters:
+    ----------
+    crime_df: pd.DataFrame
+        The pandas DataFrame returned from the function `fetch_crime_data`
+
+    Returns:
+    -------
+    pd.DataFrame
+        The crime dataframe, cleaned with no NaNs, OHE'd columns, renamed columns, and new features.
     """
     print("\n<<<<< Cleaning crime data >>>>>")
 
@@ -179,6 +203,10 @@ def fetch_weather_data(
         The URL string where the data is collected from
     max_retries: int
         The number of retries if the request fails initially
+
+    Returns:
+    pd.DataFrame
+        A pandas DataFrame with daily weather data for the selected variables.
     """
     print(f"\n<<<<< Fetching weather from {start_date} to {end_date} >>>>>")
 
@@ -213,9 +241,13 @@ def fetch_weather_data(
         retries = 0
         while retries < max_retries:
             try:
-                response = requests.get(weather_url, headers=headers, params=params, timeout=20)
+                response = requests.get(
+                    weather_url, headers=headers, params=params, timeout=20
+                )
                 if response.status_code in [500, 502, 503, 504]:
-                    raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                    raise requests.exceptions.HTTPError(
+                        f"{response.status_code} Server Error"
+                    )
                 response.raise_for_status()
                 break
             except requests.exceptions.RequestException as e:
@@ -241,7 +273,9 @@ def fetch_weather_data(
     if df.empty:
         return pd.DataFrame()
     df["date_dt"] = pd.to_datetime(df["date"]).dt.date
-    weather_df = df.pivot_table(index="date_dt", columns="datatype", values="value").reset_index()
+    weather_df = df.pivot_table(
+        index="date_dt", columns="datatype", values="value"
+    ).reset_index()
 
     return weather_df
 
@@ -287,7 +321,7 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     # Extract the date
     weather_df["date_dt"] = weather_df["datetime"].dt.date
     # Drop "datetime" column since it is no longer needed
-    weather_df = weather_df.drop(columns=['datetime'])
+    weather_df = weather_df.drop(columns=["datetime"])
 
     # In very rare cases, a few dates have NaNs for some columns. I fill them in with 0's
     fill_values = {
@@ -307,7 +341,11 @@ def clean_weather_data(weather_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_census_data(
-    state_fips: str, county_fips: str, token: str, census_api_url: str, max_retries: int = 5
+    state_fips: str,
+    county_fips: str,
+    token: str,
+    census_api_url: str,
+    max_retries: int = 5,
 ) -> pd.DataFrame:
     """
     Downloads and processes ACS 5-Year data for all tracts in a county, including calculation of key
@@ -327,7 +365,7 @@ def fetch_census_data(
         The number of times to make another attempt at the request, if it fails initially
 
     Returns:
-    --------
+    -------
     pd.DataFrame
         A DataFrame containing the census data with relevant columns and calculated rates.
     """
@@ -365,12 +403,16 @@ def fetch_census_data(
         try:
             response = requests.get(census_api_url, params=params, timeout=20)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error"
+                )
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
             wait_time = 2**retries
-            print(f"Warning: Census API request failed ({e}). Retrying in {wait_time}s...")
+            print(
+                f"Warning: Census API request failed ({e}). Retrying in {wait_time}s..."
+            )
             time.sleep(wait_time)
             retries += 1
 
@@ -437,10 +479,16 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     # Calculate new features which are useful for the clustering task
     # Replace zeros with NaN to prevent division errors
     census_df["pop_total"] = census_df["pop_total"].replace(0, np.nan)
-    census_df["total_housing_units"] = census_df["total_housing_units"].replace(0, np.nan)
-    census_df["total_occupied_units"] = census_df["total_occupied_units"].replace(0, np.nan)
+    census_df["total_housing_units"] = census_df["total_housing_units"].replace(
+        0, np.nan
+    )
+    census_df["total_occupied_units"] = census_df["total_occupied_units"].replace(
+        0, np.nan
+    )
     census_df["poverty_rate"] = census_df["poverty_total"] / census_df["pop_total"]
-    census_df["vacancy_rate"] = census_df["vacant_housing_units"] / census_df["total_housing_units"]
+    census_df["vacancy_rate"] = (
+        census_df["vacant_housing_units"] / census_df["total_housing_units"]
+    )
     census_df["renter_occupancy_rate"] = (
         census_df["renter_occupied_units"] / census_df["total_occupied_units"]
     )
@@ -449,7 +497,9 @@ def clean_census_data(census_df: pd.DataFrame) -> pd.DataFrame:
     rate_cols = ["poverty_rate", "vacancy_rate", "renter_occupancy_rate"]
     census_df[rate_cols] = census_df[rate_cols].fillna(0)
 
-    print(f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>")
+    print(
+        f"<<<<< Downloaded and processed census data for {len(census_df)} tracts. >>>>>"
+    )
 
     # Return the final, clean set of columns
     final_columns = [
@@ -491,7 +541,9 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
         try:
             response = requests.get(census_shape_url, timeout=20)
             if response.status_code in [500, 502, 503, 504]:
-                raise requests.exceptions.HTTPError(f"{response.status_code} Server Error")
+                raise requests.exceptions.HTTPError(
+                    f"{response.status_code} Server Error"
+                )
             response.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
@@ -507,12 +559,14 @@ def get_census_tracts(census_shape_url: str, max_retries: int = 5) -> gpd.GeoDat
     # Load the GeoJSON response directly into a GeoDataFrame
     gdf_tracts = gpd.GeoDataFrame.from_features(response.json()["features"])
     # Set the coordinate reference system, which is standard for web data
-    gdf_tracts = gdf_tracts.set_crs("EPSG:2272")
+    gdf_tracts = gdf_tracts.set_crs("EPSG:4326")
 
     return gdf_tracts
 
 
-def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def merge_crime_census(
+    crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame
+) -> gpd.GeoDataFrame:
     """
     Merges crime data with census data based on spatial join with census tracts.
 
@@ -533,7 +587,7 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
     crime_gdf = gpd.GeoDataFrame(
         crime_df,
         geometry=gpd.points_from_xy(crime_df["lon"], crime_df["lat"]),
-        crs="EPSG:2272",
+        crs="EPSG:4326",  # Match the CRS from census tract data for proper joining
     )
 
     # Perform the spatial join
@@ -544,9 +598,13 @@ def merge_crime_census(crime_df: pd.DataFrame, census_tracts: gpd.GeoDataFrame) 
         final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", op="within")
     except TypeError:
         # For older GeoPandas versions
-        final_crime_data = gpd.sjoin(crime_gdf, census_tracts, how="inner", predicate="within")
+        final_crime_data = gpd.sjoin(
+            crime_gdf, census_tracts, how="inner", predicate="within"
+        )
 
-    print("\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>")
+    print(
+        "\n <<<<< Spatial join complete. Crime data now includes census tract info. >>>>>"
+    )
 
     # Clean up the final DataFrame
     final_crime_data = final_crime_data.drop(
@@ -645,6 +703,7 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
     Deletes all runs in an MLFlow experiment that are older than the specified retention period.
 
     Parameters:
+    -----------
     experiment_id: str
         The string indicating the MLFlow experiment
     days_to_keep: int
@@ -682,7 +741,11 @@ def cleanup_old_runs(experiment_id: str, days_to_keep: int):
 
 
 def run_tpe_search(
-    df: pd.DataFrame, seed: int, max_evals: int, pipeline_run_id: str, search_space: dict
+    df: pd.DataFrame,
+    seed: int,
+    max_evals: int,
+    pipeline_run_id: str,
+    search_space: dict,
 ):
     """
     Runs a hyperparameter search using Hyperopt's TPE algorithm, logging results to MLFlow.
@@ -700,13 +763,17 @@ def run_tpe_search(
     search_space: dict
         The search space dictionary
     """
-    print(f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎")
+    print(
+        f"🔎🔎🔎Starting hyperparameter search for {max_evals} evaluations using TPE!🔎🔎🔎"
+    )
 
     # Prepare data for clustering
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
+    cols_to_scale = [
+        col for col in numeric_cols if "_sin" not in col and "_cos" not in col
+    ]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     columns_to_drop = [
@@ -718,7 +785,6 @@ def run_tpe_search(
         "tract_id",
     ]
     df_umap_ready = df_scaled.drop(columns=columns_to_drop)
-    
 
     def objective(params: dict):
         """
@@ -817,13 +883,17 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
     )
 
     if best_run.empty:
-        raise Exception("No runs found in the experiment. Cannot determine best parameters.")
+        raise Exception(
+            "No runs found in the experiment. Cannot determine best parameters."
+        )
 
     best_run_name = best_run["tags.mlflow.runName"].iloc[0]
 
     # Extract the set of best parameters
     best_params = best_run.filter(regex="params\..*").to_dict("records")[0]
-    best_params = {key.replace("params.", ""): value for key, value in best_params.items()}
+    best_params = {
+        key.replace("params.", ""): value for key, value in best_params.items()
+    }
 
     print(f"<<<<< Best run: {best_run_name} >>>>>")
     print(f"<<<<< Best parameters found: {best_params} >>>>>")
@@ -832,7 +902,7 @@ def get_best_run_parameters(experiment_id: str, pipeline_run_id: str) -> dict:
 
 
 def run_final_pipeline(
-    df: pd.DataFrame, best_params: dict, seed: int, max_clusters: int, prob_threshold: float
+    df: pd.DataFrame, best_params: dict, seed: int, max_clusters: int
 ) -> pd.DataFrame:
     """
     Runs the clustering pipeline with the best hyperparameters from the MLFlow experiment,
@@ -848,21 +918,24 @@ def run_final_pipeline(
         The RNG seed
     max_clusters: int
         The maximum number of HQ clusters in the case that there are an excess amount
-    prob_threshold: float
-        The probability threshold for the minimum average probability association for each cluster
 
     Returns:
+    --------
     pd.DataFrame
         The dataframe `df` with cluster labels, filtered down to the observations with the most
         confident clusters
     """
-    print(f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>")
+    print(
+        f"\n<<<<< Running final pipeline with best hyperparameters: {best_params} >>>>>"
+    )
 
     # Preprocess the data as before
     scaler = StandardScaler()
     scaler.set_output(transform="pandas")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    cols_to_scale = [col for col in numeric_cols if "_sin" not in col and "_cos" not in col]
+    cols_to_scale = [
+        col for col in numeric_cols if "_sin" not in col and "_cos" not in col
+    ]
     df_scaled = df.copy()
     df_scaled[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     columns_to_drop = [
@@ -901,16 +974,348 @@ def run_final_pipeline(
     labels = clusterer.labels_
     probs = clusterer.probabilities_
     prob_df = pd.DataFrame({"label": labels, "probability": probs})
+    # Filter out crimes that were labeled as noise
     prob_df = prob_df[prob_df["label"] != -1]
 
     if not prob_df.empty:
-        mean_probs = prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
-        high_quality_clusters = mean_probs[mean_probs > prob_threshold].head(max_clusters)
-        df_high_quality = df[df["cluster_label"].isin(high_quality_clusters.index)].copy()
+        mean_probs = (
+            prob_df.groupby("label")["probability"].mean().sort_values(ascending=False)
+        )
+        high_quality_clusters = mean_probs.head(max_clusters)
+        df_high_quality = df[
+            df["cluster_label"].isin(high_quality_clusters.index)
+        ].copy()
 
-        print(f"\nFiltered final data to {len(df_high_quality)} points")
-        print(f"{len(high_quality_clusters)} high-quality clusters.")
+        print(f"\n <<<<< Filtered final data to {len(df_high_quality)} points. >>>>>")
+        print(
+            f"\n <<<<< Retrieved {len(high_quality_clusters)} high-quality clusters. >>>>>"
+        )
     else:
-        print("No high-quality clusters found in the final run.")
+        print("<<<<< No high-quality clusters found in the final run. >>>>>")
 
     return df_high_quality
+
+
+# Define functions regarding mapping the data ------------------------------------------------------
+
+
+def plot_recent_crimes(
+    m: folium.Map, recent_crime: pd.DataFrame, color_map_types: dict
+) -> folium.Map:
+    """
+    Plots recent crime incidents on the map as circles, colored by crime type
+
+    Parameters:
+    -----------
+    m: folium.Map
+        The Folium map object to add the layers to
+    recent_crime: pd.DataFrame
+        DataFrame containing recent crime data with a 'crime_type' column
+    color_map_types: dict
+        A dictionary mapping crime types to hex colors
+
+    Returns:
+    --------
+    folium.Map
+        The updated Folium map object with the recent crime layers
+    """
+    # Create layers for recent crimes (as circles)
+    crime_agg_view = MarkerCluster(name="Recent Crimes (Aggregated)").add_to(m)
+    crime_det_view = folium.FeatureGroup(name="Recent Crimes (Detailed)").add_to(m)
+
+    # Add recent crime markers
+    for _, row in recent_crime.iterrows():
+        popup_text = row["crime_type"].replace("crime_", "")
+        marker_args = {
+            "location": [row["lat"], row["lon"]],
+            "radius": 5,
+            "color": color_map_types[row["crime_type"]],
+            "fill": True,
+            "fill_color": color_map_types[row["crime_type"]],
+            "fill_opacity": 0.7,
+            "popup": popup_text,
+        }
+        folium.CircleMarker(**marker_args).add_to(crime_agg_view)
+        folium.CircleMarker(**marker_args).add_to(crime_det_view)
+
+    return m
+
+
+def plot_cluster_outlines(
+    m: folium.Map,
+    df_clustered: pd.DataFrame,
+    color_map_clusters: dict,
+    alpha_labels: dict,
+    dbscan_threshold: int,
+) -> folium.Map:
+    """
+    Plots intelligent cluster outlines and representative icons on the map with DBSCAN
+
+    Parameters:
+    -----------
+    m: folium.Map
+        The Folium map object to add the layers to
+    df_clustered: pd.DataFrame
+        DataFrame with clustered crime data, including 'cluster_label' and summary stats
+    color_map_clusters: dict
+        A dictionary mapping cluster labels to hex colors
+    alpha_labels: dict
+        A dictionary mapping numeric cluster labels to alphabetical labels
+    dbscan_threshold: int
+        An integer representing how many feet apart crime has to be, to be clustered together.
+        Larger values mean capturing broader patterns, while smaller values mean capturing more
+        local patterns
+
+    Returns:
+    --------
+    folium.Map
+        The updated Folium map object with the cluster outline layers
+    """
+    # Create new layers for the cluster outlines and icons
+    cluster_outlines = folium.FeatureGroup(name="Cluster Outlines").add_to(m)
+    cluster_icons = folium.FeatureGroup(name="Cluster Icons").add_to(m)
+
+    # Create subclusters with the clustered data. This is so I can visualize the clusters of crime by
+    # outlying distinct regions where crimes cluster together, instead of plotting each individuala
+    # crime which would be a lot harder to view and cause lag on the map when rendering
+
+    print(df_clustered.crs)
+
+    # Convert df_clustered to a GeoDataFrame and project it for distance calculations
+    clustered_gdf = gpd.GeoDataFrame(
+        df_clustered,
+        geometry=gpd.points_from_xy(df_clustered.lon, df_clustered.lat),
+        crs="EPSG:4326",  # Assume standard lat/lon
+    ).to_crs(
+        "EPSG:2272"
+    )  # Project to a system that uses feet for accurate calculations
+
+    # Group by the primary cluster label to process each cluster
+    for primary_cluster_label, group in clustered_gdf.groupby("cluster_label"):
+
+        # Extract coordinates for DBSCAN
+        coords = np.array(list(zip(group.geometry.x, group.geometry.y)))
+
+        # Need at least 3 points to form a hull
+        if len(coords) < 3:
+            continue
+
+        # Run DBSCAN to find spatial sub-clusters
+        db = DBSCAN(eps=dbscan_threshold, min_samples=3).fit(coords)
+        group = group.copy()
+        group["sub_cluster"] = db.labels_
+
+        # Now, create an outline for each spatial sub-cluster
+        for sub_cluster_label, sub_group in group.groupby("sub_cluster"):
+            # Skip noise points from the sub-clustering and groups too small to form a shape
+            if sub_cluster_label == -1 or len(sub_group) < 3:
+                continue
+
+            # Create a single MultiPoint object from all points in the sub-cluster
+            multi_point = MultiPoint(sub_group["geometry"].tolist())
+
+            # Calculate the convex hull (the outline)
+            hull = multi_point.convex_hull
+
+            # Calculate the center for the icon (still in projected CRS)
+            centroid_proj = hull.centroid
+
+            # Find the most common crime type in this sub-group
+            sub_group_crime_cols = [
+                col for col in sub_group.columns if col.startswith("crime_")
+            ]
+            # Get the full column name of the most frequent crime
+            dominant_crime_col = sub_group[sub_group_crime_cols].sum().idxmax()
+            most_common_crime = dominant_crime_col.replace("crime_", "")
+
+            # Label the crime if it is extremely dominant or not
+            dominant_crime_count = sub_group[dominant_crime_col].sum()
+            dominant_crime_pct = dominant_crime_count / len(sub_group)
+            dominance_indicator = "✓" if dominant_crime_pct >= 0.5 else "⚠️"
+
+            # Calculate average median income, poverty rate, and population density
+            avg_median_income = sub_group["income_median"].mean()
+            avg_poverty_rate = sub_group["poverty_rate"].mean()
+            avg_pop_density = sub_group["pop_density_sq_km"].mean()
+
+            # Get color and info for this cluster (using the primary label for color)
+            icon_color_hex = color_map_clusters.get(primary_cluster_label, "#000000")
+
+            # Define HTML for detailed popup text with the statistics
+            popup_text = f"""
+            <b>Cluster {alpha_labels[primary_cluster_label]} (Sub-Group)</b><br>
+            Count: {len(sub_group)}<br>
+            <hr style='margin: 2px;'>
+            <b>Dominant Crime:</b> {most_common_crime} ({dominant_crime_pct:.0%}) {dominance_indicator}<br>
+            <b>Avg. Median Income:</b> ${avg_median_income:,.0f}<br>
+            <b>Avg. Poverty Rate:</b> {avg_poverty_rate:.1%}<br>
+            <b>Avg. Pop. Density:</b> {avg_pop_density:,.0f}/km²
+            """
+
+            # Convert hull back to lat/lon for plotting on Folium map
+            hull_gdf = gpd.GeoDataFrame([1], geometry=[hull], crs="EPSG:2272").to_crs(
+                "EPSG:4326"
+            )
+
+            # Add the outline to its layer
+            folium.GeoJson(
+                hull_gdf.geometry.to_json(),
+                style_function=lambda x, color=icon_color_hex: {
+                    "fillColor": color,
+                    "color": color,
+                    "weight": 2,
+                    "fillOpacity": 0.2,
+                },
+            ).add_to(cluster_outlines)
+
+            # Convert centroid to lat/lon for the marker
+            centroid_gdf = gpd.GeoDataFrame(
+                [1], geometry=[centroid_proj], crs="EPSG:2272"
+            ).to_crs("EPSG:4326")
+            centroid_latlon = [
+                centroid_gdf.geometry.y.iloc[0],
+                centroid_gdf.geometry.x.iloc[0],
+            ]
+
+            # Define the HTML for the cluster outline icon
+            icon_html = f'<div style="text-align: center; color: {icon_color_hex};"><i class="fa fa-tag fa-2x"></i></div>'
+
+            # Add the representative icon to each layer
+            folium.Marker(
+                location=centroid_latlon,
+                icon=folium.DivIcon(
+                    html=icon_html, icon_size=(24, 24), icon_anchor=(12, 12)
+                ),
+                popup=popup_text,
+            ).add_to(cluster_icons)
+
+    return m
+
+
+def plot_hotspot_analysis(
+    m: folium.Map, df_clustered: pd.DataFrame, philly_gdf: gpd.GeoDataFrame
+) -> folium.Map:
+    """
+    Performs a hotspot analysis on the given data and adds it as a choropleth layer
+
+    Parameters:
+    -----------
+    m: folium.Map
+        The Folium map object to add the layers to
+    df_clustered: pd.DataFrame
+        DataFrame with clustered crime data
+    philly_gdf: gpd.GeoDataFrame
+        GeoDataFrame containing the Philadelphia boundary
+
+    Returns:
+    --------
+    folium.Map
+        The updated Folium map object with the hotspot layer
+    """
+    # Convert df_clustered to a GeoDataFrame and project it for distance calculations
+    clustered_gdf = gpd.GeoDataFrame(
+        df_clustered,
+        geometry=gpd.points_from_xy(df_clustered.lon, df_clustered.lat),
+        crs="EPSG:4326",
+    ).to_crs("EPSG:2272")
+
+    # Create grid based on the entire Philadelphia boundary for full coverage
+    philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
+    xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
+    cell_size = 2500  # Grid cell size in feet; can be set higher/lower
+    grid_cells = []
+    x = xmin
+    while x < xmax:
+        y = ymin
+        while y < ymax:
+            grid_cells.append(
+                Polygon(
+                    [
+                        (x, y),
+                        (x + cell_size, y),
+                        (x + cell_size, y + cell_size),
+                        (x, y + cell_size),
+                    ]
+                )
+            )
+            y += cell_size
+        x += cell_size
+    hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
+
+    # Count points from df_clustered in each grid cell
+    joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
+    crime_counts = joined.groupby("index_right").size().rename("n_crimes")
+    hotspot_grid = hotspot_grid.merge(
+        crime_counts, left_index=True, right_index=True, how="left"
+    )
+    hotspot_grid["n_crimes"].fillna(0, inplace=True)
+    # Create a separate grid for the analysis containing only cells with crime
+    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
+
+    # Calculate the Gi* statistic (z-scores) only on cells with data
+    w = weights.Queen.from_dataframe(analysis_grid)
+    g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
+    analysis_grid["z_score"] = g_local.Zs
+
+    # Merge the z-scores back into the full grid for complete visualization
+    hotspot_grid = hotspot_grid.merge(
+        analysis_grid[["z_score"]], left_index=True, right_index=True, how="left"
+    )
+    # Fill cells with no z-score (0 crimes or islands) with a neutral value of 0
+    hotspot_grid["z_score"].fillna(0, inplace=True)
+
+    # Trim the grid to the Philadelphia boundary
+    hotspot_grid_trimmed = gpd.overlay(
+        hotspot_grid, philly_gdf_proj, how="intersection"
+    )
+
+    # Reset the index to create a column that can be used as a key
+    hotspot_grid_for_plot = hotspot_grid_trimmed.reset_index()
+
+    # Select only the necessary columns to prevent JSON serialization errors
+    hotspot_data_for_viz = hotspot_grid_for_plot[["index", "z_score", "geometry"]]
+
+    # Create a Choropleth layer for the hotspots; The reversed red/blue colormap is used, so
+    # hotspots (identified with darker red) are shown with a higher z score, and coldspots
+    # (identified with blue) are shown with a negative/near zero z score.
+    chlorpleth = folium.Choropleth(
+        geo_data=hotspot_data_for_viz.to_crs("EPSG:4326"),
+        name="Hotspots",
+        data=hotspot_data_for_viz,
+        columns=["index", "z_score"],
+        key_on="feature.id",
+        fill_color="RdBu_r",
+        fill_opacity=0.6,
+        line_opacity=0.2,
+        legend_name="Hotspot Intensity",
+        highlight=True,
+    ).add_to(m)
+
+    # Add CSS for formatting the chlorpleth legend, so it stands out better with the background of
+    # the map
+    legend_css = """
+    <style>
+        .legend {
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 1.4;
+            box-shadow: 0 0 4px rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .legend text, .legend-title {
+            text-shadow:
+                0 0 2px #fff,
+                -1px -1px 0 #fff,
+                1px -1px 0 #fff,
+                -1px 1px 0 #fff,
+                1px 1px 0 #fff;
+        }
+    </style>
+    """
+    m.get_root().html.add_child(Element(legend_css))
+
+    return m

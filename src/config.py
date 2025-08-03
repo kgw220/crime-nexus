@@ -29,9 +29,6 @@ CENSUS_SHAPE_URL = (
 PHILLY_COUNTY_FIPS = "101"
 PA_STATE_FIPS = "42"
 
-# Probability threshold for clustering
-PROBABILITY_THRESHOLD = 0.95
-
 # Hyperopt space
 SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
@@ -56,3 +53,10 @@ HQ_CLUSTER_LIMIT = 10
 
 # Random seed to get the psuedo random number generator
 RANDOM_SEED = 42
+
+# The URL to the boundary geojson file for the city of Philadelphia
+BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
+
+# The DBSCAN threshold for how many feet crime has to be close by, to be put in the same cluster
+# outline
+DISTANCE_THRESHOLD = 1000
