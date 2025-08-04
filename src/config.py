@@ -63,4 +63,4 @@ WORKFLOW_FILE_NAME = "daily_run.yml"
 ARTIFACT_NAME = "daily-data"
 
 # Specify GitHub Token
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv("PERSONAL_ACCESS_TOKEN")
