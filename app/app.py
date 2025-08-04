@@ -24,7 +24,9 @@ from src.data_utils import (
     plot_cluster_outlines,
     plot_hotspot_analysis,
 )
-from src.config import GITHUB_REPO, WORKFLOW_FILE_NAME, ARTIFACT_NAME, GITHUB_TOKEN
+from src.config import GITHUB_REPO, WORKFLOW_FILE_NAME, ARTIFACT_NAME
+
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 
 st.title("Streamlit test")
 
@@ -35,4 +37,6 @@ crime_df, labeled_df, merged_df = get_latest_github_artifact_data(
     artifact_name=ARTIFACT_NAME,
     github_token=GITHUB_TOKEN,
 )
-print(crime_df)
+
+# Print statement for testing purposes
+st.dataframe(crime_df)
