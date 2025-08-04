@@ -12,6 +12,7 @@ import os
 import pandas as pd
 import random
 import requests
+import streamlit as st
 import time
 import umap
 import zipfile
@@ -955,6 +956,7 @@ def run_final_pipeline(
 # Define functions regarding pulling the saved data from the pipeline ------------------------------
 
 
+@st.cache_data
 def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
     """
     Finds and loads a pickle file from a folder based on a filename prefix.
@@ -987,6 +989,7 @@ def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.G
     return df
 
 
+@st.cache_data
 def get_latest_github_artifact_data(
     repo_name: str,
     workflow_filename: str,
