@@ -1,0 +1,14 @@
+folium
+geopandas
+hdbscan
+hyperopt
+matplotlib
+mlflow
+numpy
+pandas
+pysal
+requests
+scikit-learn
+setuptools 
+umap-learn
+uuid

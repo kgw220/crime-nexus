@@ -41,7 +41,7 @@ jobs:
 
       # Install the Python libraries listed in your requirements.txt file
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements_actions.txt
       
       # Set up Git Large File Storage (LFS) for handling large data files
       - name: Set up Git LFS
