@@ -74,8 +74,6 @@ philly_gdf = gpd.read_file(BOUNDARY)
 min_lon, min_lat, max_lon, max_lat = philly_gdf.total_bounds
 map_bounds = [[min_lat, min_lon], [max_lat, max_lon]]
 
-print("Initial data loaded")
-
 # NOTE: Have to refresh the map from being empty for code to function correctly
 # Create Folium map of crime, centered at mean lat/lon
 m_crime = folium.Map(
@@ -142,5 +140,7 @@ full_legend_cluster_html = (
 )
 m_crime.get_root().html.add_child(folium.Element(full_legend_cluster_html))
 
+print("test")
+
 # Render the map in Streamlit and display it
-st_folium(m_crime, width=800, height=600)
+st_data = st_folium(m_crime, width=800, height=600)
