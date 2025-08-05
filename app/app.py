@@ -18,7 +18,7 @@ import sys
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
-from src.data_utils import (
+from streamlit_utils import (
     get_latest_github_artifact_data,
     plot_recent_crimes,
     plot_cluster_outlines,
