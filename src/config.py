@@ -42,11 +42,11 @@ SEARCH_SPACE = {
 RUN_RETENTION_DAYS = 7
 
 # Set the number of evaluations the TPE algorithm will perform
-# NOTE: Ideally, this would be set higher, but each run takes ~30 minutes to load, and GitHub
+# NOTE: Ideally, this would be set higher, but each run takes some time, and GitHub
 # Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
 # a paid tier.
-NUM_EXPERIMENT_EVALS = 10
+NUM_EXPERIMENT_EVALS = 1
 
 # Number of top High Quality clusters to keep
 HQ_CLUSTER_LIMIT = 10
