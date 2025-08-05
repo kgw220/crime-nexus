@@ -2,6 +2,7 @@ auto_mix_prep==0.2.0
 branca==0.8.1
 folium==0.20.0
 geopandas==1.1.1
+hyperopt==0.2.7
 matplotlib==3.10.5
 numpy==1.26.4
 pandas==2.3.1

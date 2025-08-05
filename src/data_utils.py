@@ -15,7 +15,6 @@ import mlflow
 import numpy as np
 import pandas as pd
 import requests
-import streamlit as st
 import umap
 
 from branca.element import Element
