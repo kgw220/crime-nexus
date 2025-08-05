@@ -59,5 +59,11 @@ GITHUB_REPO = "kgw220/crime-nexus"
 WORKFLOW_FILE_NAME = "daily_run.yml"
 ARTIFACT_NAME = "daily-data"
 
-# Specify GitHub Token
+# GitHub Token
 GITHUB_TOKEN = os.getenv("PERSONAL_ACCESS_TOKEN")
+
+# Philadelphia county boundary GeoJSON
+BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
+
+# Distance threshold for clustering crimes into outlines (in feet)
+DISTANCE_THRESHOLD = 1000
