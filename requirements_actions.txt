@@ -10,5 +10,6 @@ pysal
 requests
 scikit-learn
 setuptools 
+streamlit
 umap-learn
 uuid
