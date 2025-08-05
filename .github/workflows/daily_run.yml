@@ -3,8 +3,8 @@ name: Daily Data Pipeline
 
 on:
   schedule:
-    # Run at 3:00 PM UTC every day (11:00 AM EDT)
-    - cron: '0 15 * * *'
+    # Run at 4:00 PM UTC every day (12:00 PM EST)
+    - cron: '0 16 * * *'
   # Add a button in the GitHub UI to manually trigger this workflow when needed for testing
   workflow_dispatch:
 
