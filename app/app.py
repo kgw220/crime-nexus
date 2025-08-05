@@ -35,12 +35,13 @@ GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 # --------------------------------------------------------------------------------------------------
 
 # Load the data from the artifact from the most recent run
-crime_df, labeled_merged_df, merged_df = get_latest_github_artifact_data(
-    repo_name=GITHUB_REPO,
-    workflow_filename=WORKFLOW_FILE_NAME,
-    artifact_name=ARTIFACT_NAME,
-    github_token=GITHUB_TOKEN,
-)
+with st.spinner("Loading data for the crime map..."):
+    crime_df, labeled_merged_df, merged_df = get_latest_github_artifact_data(
+        repo_name=GITHUB_REPO,
+        workflow_filename=WORKFLOW_FILE_NAME,
+        artifact_name=ARTIFACT_NAME,
+        github_token=GITHUB_TOKEN,
+    )
 
 # Extract crime type from the OHE'd columns
 crime_type_cols = [col for col in crime_df.columns if col.startswith("crime_")]
@@ -89,6 +90,7 @@ folium.GeoJson(
     name="Philadelphia Boundary",
 ).add_to(m_crime)
 
+print("Initialized map")
 # Add recent crime, cluster outline, and hotspot layers to the map
 m_crime = plot_recent_crimes(m_crime, crime_df, color_map_types)
 m_crime = plot_cluster_outlines(
@@ -96,9 +98,10 @@ m_crime = plot_cluster_outlines(
 )
 m_crime = plot_hotspot_analysis(m_crime, labeled_merged_df, philly_gdf)
 
+print("Added layers to map")
 # Add a control for controlling the layers
 folium.LayerControl().add_to(m_crime)
-
+print("Added layer control to map")
 # Setting up HTML for crime type legend
 legend_html_start = """
      <div style="position: fixed; 
@@ -140,7 +143,7 @@ full_legend_cluster_html = (
 )
 m_crime.get_root().html.add_child(folium.Element(full_legend_cluster_html))
 
-print("test")
+print("Added cluster legend to map")
 
 # Render the map in Streamlit and display it
 st_data = st_folium(m_crime, width=800, height=600)
