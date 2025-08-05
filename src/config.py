@@ -29,9 +29,6 @@ CENSUS_SHAPE_URL = (
 PHILLY_COUNTY_FIPS = "101"
 PA_STATE_FIPS = "42"
 
-# Probability threshold for clustering
-PROBABILITY_THRESHOLD = 0.8
-
 # Hyperopt space
 SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
@@ -49,7 +46,7 @@ RUN_RETENTION_DAYS = 7
 # Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
 # a paid tier.
-NUM_EXPERIMENT_EVALS = 10
+NUM_EXPERIMENT_EVALS = 1
 
 # Number of top High Quality clusters to keep
 HQ_CLUSTER_LIMIT = 10
