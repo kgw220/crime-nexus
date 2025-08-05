@@ -56,7 +56,7 @@ def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.G
     return df
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def get_latest_github_artifact_data(
     repo_name: str,
     workflow_filename: str,
