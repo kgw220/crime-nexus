@@ -75,7 +75,6 @@ philly_gdf = gpd.read_file(BOUNDARY)
 min_lon, min_lat, max_lon, max_lat = philly_gdf.total_bounds
 map_bounds = [[min_lat, min_lon], [max_lat, max_lon]]
 
-# NOTE: Have to refresh the map from being empty for code to function correctly
 # Create Folium map of crime, centered at mean lat/lon
 m_crime = folium.Map(
     location=[crime_df["lat"].mean(), crime_df["lon"].mean()],
@@ -93,10 +92,13 @@ folium.GeoJson(
 print("Initialized map")
 # Add recent crime, cluster outline, and hotspot layers to the map
 m_crime = plot_recent_crimes(m_crime, crime_df, color_map_types)
+print("Plotted recent crimes on map")
 m_crime = plot_cluster_outlines(
     m_crime, labeled_merged_df, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
 )
+print
 m_crime = plot_hotspot_analysis(m_crime, labeled_merged_df, philly_gdf)
+print("Plotted cluster outlines and hotspot analysis on map")
 
 print("Added layers to map")
 # Add a control for controlling the layers

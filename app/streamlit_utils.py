@@ -246,8 +246,6 @@ def plot_cluster_outlines(
     # outlying distinct regions where crimes cluster together, instead of plotting each individuala
     # crime which would be a lot harder to view and cause lag on the map when rendering
 
-    print(df_clustered.crs)
-
     # Convert df_clustered to a GeoDataFrame and project it for distance calculations
     clustered_gdf = gpd.GeoDataFrame(
         df_clustered,
