@@ -96,9 +96,9 @@ print("Plotted recent crimes on map")
 m_crime = plot_cluster_outlines(
     m_crime, labeled_merged_df, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
 )
-print
+print("Plotted cluster outlines on map")
 m_crime = plot_hotspot_analysis(m_crime, labeled_merged_df, philly_gdf)
-print("Plotted cluster outlines and hotspot analysis on map")
+print("Plotted hotspot analysis on map")
 
 print("Added layers to map")
 # Add a control for controlling the layers
