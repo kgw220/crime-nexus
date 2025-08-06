@@ -97,15 +97,15 @@ m_crime = plot_cluster_outlines(
     m_crime, labeled_merged_df, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
 )
 print("Plotted cluster outlines on map")
-with st.spinner("Building hotspot layer..."):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(plot_hotspot_analysis, m_crime, crime_df, philly_gdf)
-        try:
-            m_crime = future.result()
-        except Exception as e:
-            st.error("Error during hotspot analysis:")
-            st.text(traceback.format_exc())
-# m_crime = plot_hotspot_analysis(m_crime, crime_df, philly_gdf)
+# with st.spinner("Building hotspot layer..."):
+#     with concurrent.futures.ThreadPoolExecutor() as executor:
+#         future = executor.submit(plot_hotspot_analysis, m_crime, crime_df, philly_gdf)
+#         try:
+#             m_crime = future.result()
+#         except Exception as e:
+#             st.error("Error during hotspot analysis:")
+#             st.text(traceback.format_exc())
+m_crime = plot_hotspot_analysis(m_crime, merged_df, philly_gdf)
 print("Plotted hotspot analysis on map")
 
 print("Added layers to map")
@@ -156,4 +156,4 @@ m_crime.get_root().html.add_child(folium.Element(full_legend_cluster_html))
 print("Added cluster legend to map")
 
 # Render the map in Streamlit and display it
-st_data = st_folium(m_crime, width=800, height=600)
+st_data = st_folium(m_crime, width=1500, height=600)
