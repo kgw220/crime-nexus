@@ -306,7 +306,7 @@ def plot_hotspot_analysis(
     # Create grid based on the entire Philadelphia boundary for full coverage
     philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
     xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
-    cell_size = 2500  # Grid cell size in feet; can be set higher/lower
+    cell_size = 10000  # Grid cell size in feet; can be set higher/lower
     grid_cells = []
     x = xmin
     while x < xmax:
@@ -331,7 +331,7 @@ def plot_hotspot_analysis(
     crime_counts = joined.groupby("index_right").size().rename("n_crimes")
     hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
     hotspot_grid["n_crimes"].fillna(0, inplace=True)
-    print(hotspot_grid)
+
     # Create a separate grid for the analysis containing only cells with crime
     analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
