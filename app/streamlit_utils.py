@@ -426,48 +426,66 @@ def plot_hotspot_analysis(
 
 
 @st.cache_resource
-def download_map_html(owner, repo, artifact_name, branch, token):
+def download_and_save_map(owner, repo, artifact_name, branch, token, path):
     """
     Finds the latest successful workflow run, downloads the specified artifact,
-    and returns the content of the 'map.html' file.
+    and saves the 'map.html' file to a local path.
+    This function is decorated with @st.cache_resource to ensure it
+    runs only once and its result (the file path) is shared across all sessions.
+    The function returns the file path, not the content, to avoid
+    Streamlit's serialization message size limits.
     """
     headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
 
-    # Step 1: Find the latest workflow run ID
-    runs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs"
-    params = {"branch": branch, "status": "success", "per_page": 1}
-    response = requests.get(runs_url, headers=headers, params=params)
-    response.raise_for_status()
-    runs_data = response.json()
+    try:
+        # Step 1: Find the latest workflow run ID
+        st.info(f"Searching for latest successful workflow run on branch '{branch}'...")
+        runs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs"
+        params = {"branch": branch, "status": "success", "per_page": 1}
+        response = requests.get(runs_url, headers=headers, params=params)
+        response.raise_for_status()
+        runs_data = response.json()
 
-    if not runs_data["workflow_runs"]:
-        st.error(f"No successful workflow runs found on branch '{branch}'.")
+        if not runs_data["workflow_runs"]:
+            st.error(f"No successful workflow runs found on branch '{branch}'.")
+            return None
+
+        run_id = runs_data["workflow_runs"][0]["id"]
+        st.info(f"Found latest successful workflow run with ID: {run_id}")
+
+        # Step 2: Find the artifact ID
+        artifacts_url = (
+            f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
+        )
+        response = requests.get(artifacts_url, headers=headers)
+        response.raise_for_status()
+        artifacts_data = response.json()
+
+        target_artifact = next(
+            (a for a in artifacts_data["artifacts"] if a["name"] == artifact_name), None
+        )
+        if not target_artifact:
+            st.error(f"Artifact '{artifact_name}' not found for run ID {run_id}.")
+            return None
+
+        # Step 3: Download the artifact (which is a ZIP file)
+        download_url = target_artifact["archive_download_url"]
+        st.info(f"Downloading artifact from: {download_url}")
+        response = requests.get(download_url, headers=headers, stream=True)
+        response.raise_for_status()
+
+        # Step 4: Extract and save the map.html file
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+            with zf.open("map.html") as html_file:
+                map_content = html_file.read()
+                with open(path, "wb") as f:
+                    f.write(map_content)
+                st.success("Map file downloaded and saved successfully.")
+                return path  # Return the file path, not the content
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"Failed to download map from GitHub Actions: {e}")
         return None
-
-    run_id = runs_data["workflow_runs"][0]["id"]
-    st.info(f"Found latest successful workflow run with ID: {run_id}")
-
-    # Step 2: Find the artifact ID
-    artifacts_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
-    response = requests.get(artifacts_url, headers=headers)
-    response.raise_for_status()
-    artifacts_data = response.json()
-
-    target_artifact = next(
-        (a for a in artifacts_data["artifacts"] if a["name"] == artifact_name), None
-    )
-    if not target_artifact:
-        st.error(f"Artifact '{artifact_name}' not found for run ID {run_id}.")
+    except KeyError:
+        st.error("Error: 'map.html' not found in the downloaded artifact.")
         return None
-
-    # Step 3: Download the artifact (which is a ZIP file)
-    download_url = target_artifact["archive_download_url"]
-    st.info(f"Downloading artifact from: {download_url}")
-    response = requests.get(download_url, headers=headers, stream=True)
-    response.raise_for_status()
-
-    # Step 4: Extract the map.html file from the ZIP archive
-    with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-        with zf.open("map.html") as html_file:
-            st.info("Map file extracted successfully.")
-            return html_file.read().decode("utf-8")
