@@ -20,7 +20,7 @@ from pysal.explore import esda
 from pysal.lib import weights
 from shapely.geometry import MultiPoint, Polygon
 from sklearn.cluster import DBSCAN
-from typing import Union
+from typing import Tuple, Union
 
 
 @st.cache_data
