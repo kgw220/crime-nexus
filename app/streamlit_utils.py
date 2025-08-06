@@ -337,8 +337,16 @@ def plot_hotspot_analysis(
 
     print("Doing calculations for hotspot analysis")
     # Calculate the Gi* statistic (z-scores) only on cells with data
-    w = weights.Queen.from_dataframe(analysis_grid)
-    g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
+    # w = weights.Queen.from_dataframe(analysis_grid)
+    # g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
+
+    w_initial = weights.Queen.from_dataframe(analysis_grid)
+    islands = [i for i, card in w_initial.cardinalities.items() if card == 0]
+    analysis_grid_connected = analysis_grid.drop(islands)
+    print(f"Removed {len(islands)} islands from the analysis grid.")
+    w = weights.Queen.from_dataframe(analysis_grid_connected)
+    g_local = esda.G_Local(analysis_grid_connected["n_crimes"].values, w)
+
     analysis_grid["z_score"] = g_local.Zs
 
     # Merge the z-scores back into the full grid for complete visualization
