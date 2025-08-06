@@ -98,7 +98,7 @@ m_crime = plot_cluster_outlines(
     m_crime, labeled_merged_df, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
 )
 print("Plotted cluster outlines on map")
-m_crime = plot_hotspot_analysis(m_crime, labeled_merged_df, philly_gdf)
+m_crime = plot_hotspot_analysis(m_crime, merged_df, philly_gdf)
 print("Plotted hotspot analysis on map")
 
 print("Added layers to map")
