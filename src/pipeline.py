@@ -283,14 +283,12 @@ def main():
     min_lon, min_lat, max_lon, max_lat = philly_gdf.total_bounds
     map_bounds = [[min_lat, min_lon], [max_lat, max_lon]]
 
-    print(map_bounds)
-
     # Create Folium map of crime, centered at mean lat/lon
     m_crime = folium.Map(
         location=[crime_df["lat"].mean(), crime_df["lon"].mean()],
         zoom_start=12,
-        max_bounds=map_bounds,
-        min_zoom=12,
+        # max_bounds=map_bounds,
+        # min_zoom=12,
     )
     # Add the Philadelphia boundary outline to the map
     folium.GeoJson(
@@ -299,16 +297,16 @@ def main():
         name="Philadelphia Boundary",
     ).add_to(m_crime)
 
-    print("\n<<<<< 🗺️Adding layers to map🗺️ >>>>>")
-    # Add recent crime, cluster outline, and hotspot layers to the map
-    m_crime = plot_recent_crimes(m_crime, yesterday_crime, color_map_types)
-    m_crime = plot_cluster_outlines(
-        m_crime, df_final, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
-    )
-    m_crime = plot_hotspot_analysis(m_crime, final_merged_df, philly_gdf)
+    # print("\n<<<<< 🗺️Adding layers to map🗺️ >>>>>")
+    # # Add recent crime, cluster outline, and hotspot layers to the map
+    # m_crime = plot_recent_crimes(m_crime, yesterday_crime, color_map_types)
+    # m_crime = plot_cluster_outlines(
+    #     m_crime, df_final, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
+    # )
+    # m_crime = plot_hotspot_analysis(m_crime, final_merged_df, philly_gdf)
 
-    # Add a control for controlling the layers
-    folium.LayerControl().add_to(m_crime)
+    # # Add a control for controlling the layers
+    # folium.LayerControl().add_to(m_crime)
 
     print("\n<<<<< 🗺️Setting up legend HTML🗺️ >>>>>")
     # Setting up HTML for crime type legend
