@@ -294,12 +294,14 @@ def plot_hotspot_analysis(
         The updated Folium map object with the hotspot layer
     """
     # Convert df_clustered to a GeoDataFrame and project it for distance calculations
+    print("Converting dataframe")
     clustered_gdf = gpd.GeoDataFrame(
         df_clustered,
         geometry=gpd.points_from_xy(df_clustered.lon, df_clustered.lat),
         crs="EPSG:4326",
     ).to_crs("EPSG:2272")
 
+    print("Making grid for hotspot analysis")
     # Create grid based on the entire Philadelphia boundary for full coverage
     philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
     xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
@@ -323,6 +325,8 @@ def plot_hotspot_analysis(
         x += cell_size
     hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
 
+    print("Aggregating crime in each grid cell")
+
     # Count points from df_clustered in each grid cell
     joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
     crime_counts = joined.groupby("index_right").size().rename("n_crimes")
@@ -331,6 +335,7 @@ def plot_hotspot_analysis(
     # Create a separate grid for the analysis containing only cells with crime
     analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
+    print("Doing calculations for hotspot analysis")
     # Calculate the Gi* statistic (z-scores) only on cells with data
     w = weights.Queen.from_dataframe(analysis_grid)
     g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
@@ -355,6 +360,7 @@ def plot_hotspot_analysis(
     # Create a Choropleth layer for the hotspots; The reversed red/blue colormap is used, so
     # hotspots (identified with darker red) are shown with a higher z score, and coldspots
     # (identified with blue) are shown with a negative/near zero z score.
+    print("Adding hotspot layer to map")
     chlorpleth = folium.Choropleth(
         geo_data=hotspot_data_for_viz.to_crs("EPSG:4326"),
         name="Hotspots",
