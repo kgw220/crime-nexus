@@ -40,4 +40,4 @@ map_html = download_map_html(
 )
 
 st.header("Displaying Map")
-components.html(map_html, height=2000, scrolling=True)
+components.html(map_html, height=800, width=1200, scrolling=True)
