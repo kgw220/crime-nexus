@@ -280,6 +280,11 @@ def main():
 
     # Load Philadelphia boundary GeoJSON
     philly_gdf = gpd.read_file(BOUNDARY)
+    print(f" Philly Boundary: {philly_gdf.head()}")
+    print(f" Crime Data: {yesterday_crime.head()}")
+    print(f" Clustered Data: {df_final.head()}")
+    print(f" Final Merged Data: {final_merged_df.head()}")
+
     min_lon, min_lat, max_lon, max_lat = philly_gdf.total_bounds
     map_bounds = [[min_lat, min_lon], [max_lat, max_lon]]
 
