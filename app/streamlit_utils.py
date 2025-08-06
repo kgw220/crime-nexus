@@ -324,8 +324,6 @@ def plot_hotspot_analysis(
             y += cell_size
         x += cell_size
     hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
-    # Ensure hotspot_grid has 'n_crimes' column with 0 for empty cells
-    hotspot_grid["n_crimes"].fillna(0, inplace=True)
 
     print("Aggregating crime in each grid cell")
 
@@ -335,25 +333,25 @@ def plot_hotspot_analysis(
     hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
     hotspot_grid["n_crimes"].fillna(0, inplace=True)
     # Create a separate grid for the analysis containing only cells with crime
-    # analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
+    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
     print("Doing calculations for hotspot analysis")
     # Calculate the Gi* statistic (z-scores) only on cells with data
-    w = weights.Queen.from_dataframe(hotspot_grid)
+    w = weights.Queen.from_dataframe(analysis_grid)
 
     print("Calculating G* local statistic")
-    print("Variance of n_crimes:", hotspot_grid["n_crimes"].var())
-    g_local = esda.G_Local(hotspot_grid["n_crimes"].values, w)
+    print("Variance of n_crimes:", analysis_grid["n_crimes"].var())
+    g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
 
     print("Adding z-scores to the grid")
 
-    hotspot_grid["z_score"] = g_local.Zs
+    analysis_grid["z_score"] = g_local.Zs
 
     print("Mergeing z-scores back into the grid")
 
     # Merge the z-scores back into the full grid for complete visualization
     hotspot_grid = hotspot_grid.merge(
-        hotspot_grid[["z_score"]], left_index=True, right_index=True, how="left"
+        analysis_grid[["z_score"]], left_index=True, right_index=True, how="left"
     )
     # Fill cells with no z-score (0 crimes or islands) with a neutral value of 0
     hotspot_grid["z_score"].fillna(0, inplace=True)
