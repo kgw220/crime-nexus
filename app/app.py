@@ -61,9 +61,9 @@ with st.sidebar:
     )
     st.markdown("---")
     st.markdown(
-        f"➼ Recent crime shows crimes for "
+        f"➼ Recent crime on the map shows crimes for "
         f"**{crime_df['dispatch_date'].min().strftime('%Y-%m-%d')}** \n\n"
-        f"➼ Cluster/Hotspot data shows data from "
+        f"➼ Cluster/Hotspot data on the map shows data from "
         f"**{labeled_merged_df['dispatch_date'].min().strftime('%Y-%m-%d')} to "
         f"{labeled_merged_df['dispatch_date'].max().strftime('%Y-%m-%d')}**"
     )
@@ -163,7 +163,7 @@ with tab2:
 
     # Convert the datetime column to a string format for better readability
     labeled_merged_df_clean["dispatch_date"] = labeled_merged_df_clean["dispatch_date"].dt.strftime(
-        "%Y:%m:%d"
+        "%Y/%m/%d"
     )
     labeled_merged_df_clean["dispatch_time"] = labeled_merged_df_clean["dispatch_time"].dt.strftime(
         "%H:%M:%S"

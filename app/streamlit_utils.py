@@ -113,8 +113,8 @@ def plot_recent_crimes(
         The updated Folium map object with the recent crime layers
     """
     # Create layers for recent crimes (as circles)
-    crime_agg_view = MarkerCluster(name="Recent Crimes (Aggregated)").add_to(m)
-    crime_det_view = folium.FeatureGroup(name="Recent Crimes (Detailed)").add_to(m)
+    crime_agg_view = MarkerCluster(name="Recent Crimes (Aggregated Counts)").add_to(m)
+    crime_det_view = folium.FeatureGroup(name="Recent Crimes By Type").add_to(m)
 
     # Add recent crime markers
     for _, row in recent_crime.iterrows():
