@@ -19,12 +19,9 @@ import streamlit.components.v1 as components
 import sys
 import traceback
 
-
-from streamlit_folium import st_folium
-
 from streamlit_utils import download_map_html
 
-REPO_OWNER = "kgw229"
+REPO_OWNER = "kgw220"
 REPO_NAME = "crime-nexus"
 ARTIFACT_NAME = "map-html-artifact"
 BRANCH = "main"
