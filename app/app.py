@@ -38,10 +38,10 @@ script_dir = os.path.dirname(__file__)
 data_directory_path = os.path.join(script_dir, "..", "data")
 
 with st.spinner("Loading data for the crime map..."):
-    crime_df, labeled_df, merged_df = load_data_from_directory(data_directory_path)
+    crime_df, labeled_merged_df, merged_df = load_data_from_directory(data_directory_path)
 
 st.dataframe(crime_df.head(10), use_container_width=True)
-st.dataframe(labeled_df.head(10), use_container_width=True)
+st.dataframe(labeled_merged_df.head(10), use_container_width=True)
 st.dataframe(merged_df.head(10), use_container_width=True)
 
 # Extract crime type from the OHE'd columns
