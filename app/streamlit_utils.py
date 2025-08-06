@@ -274,7 +274,7 @@ def plot_cluster_outlines(
 
 
 def plot_hotspot_analysis(
-    m: folium.Map, df_clustered: pd.DataFrame, philly_gdf: gpd.GeoDataFrame
+    m: folium.Map, df_merged_crime: pd.DataFrame, philly_gdf: gpd.GeoDataFrame
 ) -> folium.Map:
     """
     Performs a hotspot analysis on the given data and adds it as a choropleth layer
@@ -283,8 +283,8 @@ def plot_hotspot_analysis(
     -----------
     m: folium.Map
         The Folium map object to add the layers to
-    df_clustered: pd.DataFrame
-        DataFrame with clustered crime data
+    df_merged_crime: pd.DataFrame
+        DataFrame with merged crime data
     philly_gdf: gpd.GeoDataFrame
         GeoDataFrame containing the Philadelphia boundary
 
@@ -296,8 +296,8 @@ def plot_hotspot_analysis(
     # Convert df_clustered to a GeoDataFrame and project it for distance calculations
     print("Converting dataframe")
     clustered_gdf = gpd.GeoDataFrame(
-        df_clustered,
-        geometry=gpd.points_from_xy(df_clustered.lon, df_clustered.lat),
+        df_merged_crime,
+        geometry=gpd.points_from_xy(df_merged_crime.lon, df_merged_crime.lat),
         crs="EPSG:4326",
     ).to_crs("EPSG:2272")
 
@@ -340,6 +340,7 @@ def plot_hotspot_analysis(
     w = weights.Queen.from_dataframe(analysis_grid)
 
     print("Calculating G* local statistic")
+    print("Variance of n_crimes:", analysis_grid["n_crimes"].var())
     g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
 
     print("Adding z-scores to the grid")
