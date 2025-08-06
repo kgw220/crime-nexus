@@ -401,3 +401,39 @@ def add_legend(
     m.get_root().html.add_child(folium.Element(full_legend_cluster_html))
 
     return m
+
+
+# Define functions for other tasks -----------------------------------------------------------------
+
+
+@st.cache_data
+def reverse_ohe_and_clean(_df, ohe_prefixes):
+    """
+    Reverses one-hot-encoding for specified columns, adds human-readable columns,
+    and cleans up the DataFrame for display.
+
+    Parameters:
+    ----------
+    df: pd.DataFrame
+        The DataFrame containing one-hot-encoded columns
+
+    ohe_prefixes: list
+        A list of prefixes for the one-hot-encoded columns to reverse
+    """
+    processed_df = _df.copy()
+
+    for prefix in ohe_prefixes:
+        # Identify OHE columns based on the current prefix
+        ohe_cols = [col for col in processed_df.columns if col.startswith(prefix)]
+
+        if ohe_cols:
+            # Create a new column with the original, human-readable name
+            new_col_name = prefix.replace("_", "")
+            processed_df[new_col_name] = (
+                processed_df[ohe_cols].idxmax(axis=1).str.replace(prefix, "")
+            )
+
+            # Drop the original OHE columns for a cleaner output
+            processed_df = processed_df.drop(columns=ohe_cols, errors="ignore")
+
+    return processed_df
