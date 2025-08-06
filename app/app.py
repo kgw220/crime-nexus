@@ -20,17 +20,18 @@ import traceback
 
 from streamlit_folium import st_folium
 
-# Setup file path to root directory of repository
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, project_root)
-
 from streamlit_utils import (
     load_data_from_directory,
     plot_recent_crimes,
     plot_cluster_outlines,
     plot_hotspot_analysis,
 )
-from src.config import BOUNDARY, DISTANCE_THRESHOLD
+
+# Philadelphia county boundary GeoJSON
+BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
+
+# Distance threshold for clustering crimes into outlines (in feet)
+DISTANCE_THRESHOLD = 1000
 
 # --------------------------------------------------------------------------------------------------
 
