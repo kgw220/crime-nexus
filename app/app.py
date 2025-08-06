@@ -22,13 +22,7 @@ import traceback
 
 from streamlit_folium import st_folium
 
-from streamlit_utils import (
-    load_data_from_directory,
-    plot_recent_crimes,
-    plot_cluster_outlines,
-    plot_hotspot_analysis,
-    download_map_html,
-)
+from streamlit_utils import download_map_html
 
 REPO_OWNER = "kgw229"
 REPO_NAME = "crime-nexus"
