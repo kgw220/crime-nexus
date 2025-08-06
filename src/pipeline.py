@@ -287,8 +287,8 @@ def main():
     m_crime = folium.Map(
         location=[crime_df["lat"].mean(), crime_df["lon"].mean()],
         zoom_start=12,
-        max_bounds=map_bounds,
-        min_zoom=12,
+        # max_bounds=map_bounds,
+        # min_zoom=12,
     )
     # Add the Philadelphia boundary outline to the map
     folium.GeoJson(
