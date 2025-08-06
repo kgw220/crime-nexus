@@ -305,7 +305,7 @@ def plot_hotspot_analysis(
     # Create grid based on the entire Philadelphia boundary for full coverage
     philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
     xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
-    cell_size = 10000  # Grid cell size in feet; can be set higher/lower
+    cell_size = 10000000000000  # Grid cell size in feet; can be set higher/lower
     grid_cells = []
     x = xmin
     while x < xmax:
