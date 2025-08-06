@@ -332,6 +332,19 @@ def plot_hotspot_analysis(
     crime_counts = joined.groupby("index_right").size().rename("n_crimes")
     hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
     hotspot_grid["n_crimes"].fillna(0, inplace=True)
+    print(hotspot_grid)
+    # Create a separate grid for the analysis containing only cells with crime
+    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
+
+    hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
+
+    print("Aggregating crime in each grid cell")
+
+    # Count points from df_clustered in each grid cell
+    joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
+    crime_counts = joined.groupby("index_right").size().rename("n_crimes")
+    hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
+    hotspot_grid["n_crimes"].fillna(0, inplace=True)
     # Create a separate grid for the analysis containing only cells with crime
     analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
