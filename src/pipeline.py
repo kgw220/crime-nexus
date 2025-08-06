@@ -203,7 +203,7 @@ def main():
     yesterday_crime.to_pickle(recent_crime_output_path)
     print(f"💾Yesterday's crime data saved to {recent_crime_output_path}💾")
 
-    # Save the merged data from entire 3-year rolling window (for hotspot analysis)
+    # Save the merged data from entire rolling window (for hotspot analysis)
     merged_output_path = os.path.join(data_dir, f"merged_data_{START_STR}_to_{END_STR}.pkl")
     final_merged_df.to_pickle(merged_output_path)
     print(f"💾Merged crime data saved to {merged_output_path}💾")
@@ -252,13 +252,13 @@ def main():
 
     print("\n<<<<< 🗺️Creating Folium map of crime data🗺️ >>>>>")
     # Extract crime type from the OHE'd columns
-    crime_type_cols = [col for col in crime_df.columns if col.startswith("crime_")]
-    for col in crime_type_cols:
-        crime_df[col] = pd.to_numeric(crime_df[col], errors="coerce").fillna(0)
-    crime_df["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
+    crime_type_cols = [col for col in yesterday_crime.columns if col.startswith("crime_")]
+    for col in yesterday_crime:
+        yesterday_crime[col] = pd.to_numeric(yesterday_crime[col], errors="coerce").fillna(0)
+    yesterday_crime["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
 
     # Define a color map for each crime type
-    unique_types = crime_df["crime_type"].unique()
+    unique_types = yesterday_crime["crime_type"].unique()
     cmap_types = plt.get_cmap("tab20", len(unique_types))
     color_map_types = {
         crime: matplotlib.colors.rgb2hex(cmap_types(i)) for i, crime in enumerate(unique_types)
@@ -283,12 +283,14 @@ def main():
     min_lon, min_lat, max_lon, max_lat = philly_gdf.total_bounds
     map_bounds = [[min_lat, min_lon], [max_lat, max_lon]]
 
+    print(map_bounds)
+
     # Create Folium map of crime, centered at mean lat/lon
     m_crime = folium.Map(
         location=[crime_df["lat"].mean(), crime_df["lon"].mean()],
         zoom_start=12,
-        # max_bounds=map_bounds,
-        # min_zoom=12,
+        max_bounds=map_bounds,
+        min_zoom=12,
     )
     # Add the Philadelphia boundary outline to the map
     folium.GeoJson(
@@ -299,7 +301,7 @@ def main():
 
     print("\n<<<<< 🗺️Adding layers to map🗺️ >>>>>")
     # Add recent crime, cluster outline, and hotspot layers to the map
-    m_crime = plot_recent_crimes(m_crime, crime_df, color_map_types)
+    m_crime = plot_recent_crimes(m_crime, yesterday_crime, color_map_types)
     m_crime = plot_cluster_outlines(
         m_crime, df_final, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
     )
