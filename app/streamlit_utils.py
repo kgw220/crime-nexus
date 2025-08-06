@@ -324,6 +324,8 @@ def plot_hotspot_analysis(
             y += cell_size
         x += cell_size
     hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
+    # Ensure hotspot_grid has 'n_crimes' column with 0 for empty cells
+    hotspot_grid["n_crimes"].fillna(0, inplace=True)
 
     print("Aggregating crime in each grid cell")
 
@@ -333,7 +335,7 @@ def plot_hotspot_analysis(
     hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
     hotspot_grid["n_crimes"].fillna(0, inplace=True)
     # Create a separate grid for the analysis containing only cells with crime
-    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
+    # analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
     print("Doing calculations for hotspot analysis")
     # Calculate the Gi* statistic (z-scores) only on cells with data
