@@ -69,7 +69,7 @@ jobs:
 
       # Store map as artifact 
       - name: Upload map HTML file as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: map-html-artifact 
           path: data/map.html      
