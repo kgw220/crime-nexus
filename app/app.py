@@ -7,6 +7,7 @@ subset data to particular attributes during hotspot analysis, and allowing the u
 application to download specific clusters of data for further analysis.
 """
 
+import concurrent.futures
 import folium
 import geopandas as gpd
 import matplotlib.colors
@@ -95,7 +96,11 @@ m_crime = plot_cluster_outlines(
     m_crime, labeled_merged_df, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
 )
 print("Plotted cluster outlines on map")
-m_crime = plot_hotspot_analysis(m_crime, crime_df, philly_gdf)
+with st.spinner("Computing G* statistic..."):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(plot_hotspot_analysis, m_crime, crime_df, philly_gdf)
+        m_crime = future.result()
+# m_crime = plot_hotspot_analysis(m_crime, crime_df, philly_gdf)
 print("Plotted hotspot analysis on map")
 
 print("Added layers to map")
