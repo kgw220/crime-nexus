@@ -48,7 +48,9 @@ data_directory_path = os.path.join(script_dir, "..", "data")
 
 # Load the data
 with st.spinner("Loading data for the crime map..."):
-    crime_df, labeled_merged_df, merged_df = load_data_from_directory(data_directory_path)
+    crime_df, labeled_merged_df, merged_df, hotspot_grid = load_data_from_directory(
+        data_directory_path
+    )
 
 progress_bar.progress(20, text="Setting up map structure...")
 
@@ -115,7 +117,7 @@ m_crime = plot_cluster_outlines(
 
 progress_bar.progress(85, text="Adding crime hotspots to map...")
 
-m_crime = plot_hotspot_analysis(m_crime, crime_df, philly_gdf)
+m_crime = plot_hotspot_analysis(m_crime, hotspot_grid)
 
 progress_bar.progress(90, text="Adding final touches to map...")
 

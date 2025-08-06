@@ -253,7 +253,7 @@ def main():
 
     hotspot_grid_output_path = os.path.join(data_dir, f"hotspot_grid_{START_STR}_to_{END_STR}.pkl")
     hotspot_grid.to_pickle(hotspot_grid_output_path)
-    print(f"----------Final clustered data saved to {hotspot_grid_output_path}----------")
+    print(f"----------Hotspot data saved to {hotspot_grid_output_path}----------")
 
 
 if __name__ == "__main__":

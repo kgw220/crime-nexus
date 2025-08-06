@@ -84,8 +84,9 @@ def load_data_from_directory(
     crime_df = load_pickle_by_prefix(data_dir, "crime_data")
     labeled_df = load_pickle_by_prefix(data_dir, "labeled_merged_data")
     merged_df = load_pickle_by_prefix(data_dir, "merged_data")
+    hotspot_df = load_pickle_by_prefix(data_dir, "hotspot_grid")
 
-    return crime_df, labeled_df, merged_df
+    return crime_df, labeled_df, merged_df, hotspot_df
 
 
 # Define functions regarding mapping the data ------------------------------------------------------
@@ -276,9 +277,7 @@ def plot_cluster_outlines(
     return m
 
 
-def plot_hotspot_analysis(
-    m: folium.Map, df_merged_crime: pd.DataFrame, philly_gdf: gpd.GeoDataFrame
-) -> folium.Map:
+def plot_hotspot_analysis(m: folium.Map, hotspot_grid: gpd.GeoDataFrame) -> folium.Map:
     """
     Performs a hotspot analysis on the given data and adds it as a choropleth layer
 
@@ -286,93 +285,21 @@ def plot_hotspot_analysis(
     -----------
     m: folium.Map
         The Folium map object to add the layers to
-    df_merged_crime: pd.DataFrame
-        DataFrame with merged crime data
-    philly_gdf: gpd.GeoDataFrame
-        GeoDataFrame containing the Philadelphia boundary
+    hotspot_grid: gpd.GeoDataFrame
+        A GeoDataFrame containing the grid cells with their z-scores
 
     Returns:
     --------
     folium.Map
         The updated Folium map object with the hotspot layer
     """
-    # Convert df_clustered to a GeoDataFrame and project it for distance calculations
-    clustered_gdf = gpd.GeoDataFrame(
-        df_merged_crime,
-        geometry=gpd.points_from_xy(df_merged_crime.lon, df_merged_crime.lat),
-        crs="EPSG:4326",
-    ).to_crs("EPSG:2272")
-
-    # Create grid based on the entire Philadelphia boundary for full coverage
-    philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
-    xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
-    cell_size = 10000  # Grid cell size in feet; can be set higher/lower
-    grid_cells = []
-    x = xmin
-    while x < xmax:
-        y = ymin
-        while y < ymax:
-            grid_cells.append(
-                Polygon(
-                    [
-                        (x, y),
-                        (x + cell_size, y),
-                        (x + cell_size, y + cell_size),
-                        (x, y + cell_size),
-                    ]
-                )
-            )
-            y += cell_size
-        x += cell_size
-    hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
-
-    # Count points from df_clustered in each grid cell
-    joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
-    crime_counts = joined.groupby("index_right").size().rename("n_crimes")
-    hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
-    hotspot_grid["n_crimes"].fillna(0, inplace=True)
-
-    # Create a separate grid for the analysis containing only cells with crime
-    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
-
-    hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
-
-    # Count points from df_clustered in each grid cell
-    joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
-    crime_counts = joined.groupby("index_right").size().rename("n_crimes")
-    hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
-    hotspot_grid["n_crimes"].fillna(0, inplace=True)
-    # Create a separate grid for the analysis containing only cells with crime
-    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
-
-    # Calculate the Gi* statistic (z-scores) only on cells with data
-    w = weights.Queen.from_dataframe(analysis_grid)
-    g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
-    analysis_grid["z_score"] = g_local.Zs
-
-    # Merge the z-scores back into the full grid for complete visualization
-    hotspot_grid = hotspot_grid.merge(
-        analysis_grid[["z_score"]], left_index=True, right_index=True, how="left"
-    )
-    # Fill cells with no z-score (0 crimes or islands) with a neutral value of 0
-    hotspot_grid["z_score"].fillna(0, inplace=True)
-
-    # Trim the grid to the Philadelphia boundary
-    hotspot_grid_trimmed = gpd.overlay(hotspot_grid, philly_gdf_proj, how="intersection")
-
-    # Reset the index to create a column that can be used as a key
-    hotspot_grid_for_plot = hotspot_grid_trimmed.reset_index()
-
-    # Select only the necessary columns to prevent JSON serialization errors
-    hotspot_data_for_viz = hotspot_grid_for_plot[["index", "z_score", "geometry"]]
-
     # Create a Choropleth layer for the hotspots; The reversed red/blue colormap is used, so
     # hotspots (identified with darker red) are shown with a higher z score, and coldspots
     # (identified with blue) are shown with a negative/near zero z score.
     chlorpleth = folium.Choropleth(
-        geo_data=hotspot_data_for_viz.to_crs("EPSG:4326"),
+        geo_data=hotspot_grid.to_crs("EPSG:4326"),
         name="Hotspots",
-        data=hotspot_data_for_viz,
+        data=hotspot_grid,
         columns=["index", "z_score"],
         key_on="feature.id",
         fill_color="RdBu_r",
