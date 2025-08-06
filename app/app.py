@@ -106,7 +106,7 @@ print("Plotted cluster outlines on map")
 #         except Exception as e:
 #             st.error("Error during hotspot analysis:")
 #             st.text(traceback.format_exc())
-m_crime = plot_hotspot_analysis(m_crime, merged_df, philly_gdf)
+# m_crime = plot_hotspot_analysis(m_crime, merged_df, philly_gdf)
 print("Plotted hotspot analysis on map")
 
 print("Added layers to map")
