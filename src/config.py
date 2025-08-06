@@ -46,16 +46,13 @@ RUN_RETENTION_DAYS = 7
 # Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
 # a paid tier.
-NUM_EXPERIMENT_EVALS = 1
+NUM_EXPERIMENT_EVALS = 25
 
 # Number of top High Quality clusters to keep
 HQ_CLUSTER_LIMIT = 10
 
 # Random seed to get the psuedo random number generator
 RANDOM_SEED = 42
-
-# Setting some strings to specify github info (related to pulling data via artifacts from repo)
-GITHUB_REPO = "kgw220/crime-nexus"
 
 # Philadelphia county boundary GeoJSON
 BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
