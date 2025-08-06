@@ -67,14 +67,6 @@ jobs:
           CENSUS_TOKEN: ${{ secrets.CENSUS_TOKEN }}
         run: python src/pipeline.py
 
-      # Store map as artifact 
-      - name: Upload map HTML file as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: map-html-artifact 
-          path: data/map.html      
-          retention-days: 3
-        
       # Commit the newly generated data files back to the repository, excluding the map html
       - name: Commit and push the new data file
         run: |
@@ -84,8 +76,6 @@ jobs:
           # Add all files in the 'data/' directory to the staging area
           # '-f' flag forces adding files
           git add -f data/
-          # Remove the map file since it is too big
-          git reset data/map*
           # Commit and push the changes
           git commit -m "Added HQ clustered data and yesterday's crime data" || echo "No changes to commit"
           # Push the changes to the repository's main branch.

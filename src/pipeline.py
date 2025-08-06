@@ -53,8 +53,6 @@ from config import (
     SEARCH_SPACE,
     HQ_CLUSTER_LIMIT,
     RANDOM_SEED,
-    BOUNDARY,
-    DISTANCE_THRESHOLD,
 )
 
 
@@ -245,119 +243,6 @@ def main():
     )
     df_final.to_pickle(labeled_merged_output_path)
     print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
-
-    # Part 3: Mapping ------------------------------------------------------------------------------
-
-    print("📌📌📌📌📌📌📌📌📌📌Starting mapping part of pipeline!📌📌📌📌📌📌📌📌📌📌")
-
-    print("\n<<<<< 🗺️Creating Folium map of crime data🗺️ >>>>>")
-    # Extract crime type from the OHE'd columns
-    crime_type_cols = [col for col in yesterday_crime.columns if col.startswith("crime_")]
-    for col in yesterday_crime:
-        yesterday_crime[col] = pd.to_numeric(yesterday_crime[col], errors="coerce").fillna(0)
-    yesterday_crime["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
-
-    # Define a color map for each crime type
-    unique_types = yesterday_crime["crime_type"].unique()
-    cmap_types = plt.get_cmap("tab20", len(unique_types))
-    color_map_types = {
-        crime: matplotlib.colors.rgb2hex(cmap_types(i)) for i, crime in enumerate(unique_types)
-    }
-
-    # Create a dynamic color map for the clustered crimes
-    unique_clusters = sorted(df_final["cluster_label"].unique())
-    cmap_clusters = plt.get_cmap("jet", len(unique_clusters))
-    color_map_clusters = {
-        cluster: matplotlib.colors.rgb2hex(cmap_clusters(i))
-        for i, cluster in enumerate(unique_clusters)
-    }
-
-    # Create a mapping for alphabetical cluster labels
-    cluster_nums = sorted(unique_clusters)
-    alpha_labels = {num: chr(65 + i) for i, num in enumerate(cluster_nums)}
-    # Apply the new labels to the dataframe
-    df_final["cluster_alpha_label"] = df_final["cluster_label"].map(alpha_labels)
-
-    # Load Philadelphia boundary GeoJSON
-    philly_gdf = gpd.read_file(BOUNDARY)
-    print(f" Philly Boundary: {philly_gdf.head()}")
-    print(f" Crime Data: {yesterday_crime.head()}")
-    print(f" Clustered Data: {df_final.head()}")
-    print(f" Final Merged Data: {final_merged_df.head()}")
-
-    min_lon, min_lat, max_lon, max_lat = philly_gdf.total_bounds
-    map_bounds = [[min_lat, min_lon], [max_lat, max_lon]]
-
-    # Create Folium map of crime, centered at mean lat/lon
-    m_crime = folium.Map(
-        location=[crime_df["lat"].mean(), crime_df["lon"].mean()],
-        zoom_start=12,
-        # max_bounds=map_bounds,
-        # min_zoom=12,
-    )
-    # Add the Philadelphia boundary outline to the map
-    folium.GeoJson(
-        philly_gdf[["geometry"]],
-        style_function=lambda x: {"color": "black", "weight": 2, "fillOpacity": 0.0},
-        name="Philadelphia Boundary",
-    ).add_to(m_crime)
-
-    # print("\n<<<<< 🗺️Adding layers to map🗺️ >>>>>")
-    # # Add recent crime, cluster outline, and hotspot layers to the map
-    # m_crime = plot_recent_crimes(m_crime, yesterday_crime, color_map_types)
-    # m_crime = plot_cluster_outlines(
-    #     m_crime, df_final, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
-    # )
-    # m_crime = plot_hotspot_analysis(m_crime, final_merged_df, philly_gdf)
-
-    # # Add a control for controlling the layers
-    # folium.LayerControl().add_to(m_crime)
-
-    print("\n<<<<< 🗺️Setting up legend HTML🗺️ >>>>>")
-    # Setting up HTML for crime type legend
-    legend_html_start = """
-        <div style="position: fixed; 
-        bottom: 50px; left: 50px; width: 250px; height: 400px; 
-        border:2px solid grey; z-index:9998; font-size:14px;
-        background-color:white; padding: 10px;">
-        <b>Crime Type Legend</b><br>
-        <div style="height: 90%; overflow-y: auto;">
-        """
-    legend_items = ""
-    for crime_type, color in color_map_types.items():
-        clean_name = crime_type.replace("crime_", "")
-        legend_items += (
-            f'&nbsp; <i class="fa fa-circle" style="color:{color}"></i> &nbsp; {clean_name}<br>'
-        )
-    legend_html_end = "</div></div>"
-    full_legend_html = legend_html_start + legend_items + legend_html_end
-    m_crime.get_root().html.add_child(folium.Element(full_legend_html))
-
-    # Setting up HTML for cluster legend
-    legend_cluster_html_start = """
-        <div style="position: fixed; 
-        bottom: 50px; right: 50px; width: 150px; height: 225px; 
-        border:2px solid grey; z-index:9999; font-size:14px;
-        background-color:white; padding: 10px;">
-        <b>Cluster Legend</b><br>
-        <div style="height: 90%; overflow-y: auto;">
-        """
-    legend_cluster_items = ""
-    for cluster_label, color in color_map_clusters.items():
-        label_text = f"Cluster {alpha_labels[cluster_label]}" if cluster_label != -1 else "Noise"
-        icon_shape = "tag" if cluster_label != -1 else "times"
-        legend_cluster_items += f'&nbsp; <i class="fa fa-{icon_shape}" style="color:{color}"></i> &nbsp; {label_text}<br>'
-    legend_cluster_html_end = "</div></div>"
-    full_legend_cluster_html = (
-        legend_cluster_html_start + legend_cluster_items + legend_cluster_html_end
-    )
-    m_crime.get_root().html.add_child(folium.Element(full_legend_cluster_html))
-
-    print("\n<<<<< 🗺️Saving map HTML🗺️ >>>>>")
-    # Save final map as html file
-    map_output_path = os.path.join(data_dir, f"map.html")
-    m_crime.save(map_output_path)
-    print(f"----------Final map saved to {map_output_path}----------")
 
 
 if __name__ == "__main__":
