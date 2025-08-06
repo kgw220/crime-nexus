@@ -350,7 +350,7 @@ def main():
 
     print("\n<<<<< 🗺️Saving map HTML🗺️ >>>>>")
     # Save final map as html file
-    map_output_path = os.path.join(data_dir, f"map_{START_STR}_to_{END_STR}.html")
+    map_output_path = os.path.join(data_dir, f"map.html")
     m_crime.save(map_output_path)
     print(f"----------Final map saved to {map_output_path}----------")
 
