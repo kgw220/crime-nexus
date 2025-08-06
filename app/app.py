@@ -23,25 +23,26 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
 from streamlit_utils import (
-    get_latest_github_artifact_data,
+    load_data_from_directory,
     plot_recent_crimes,
     plot_cluster_outlines,
     plot_hotspot_analysis,
 )
-from src.config import GITHUB_REPO, WORKFLOW_FILE_NAME, ARTIFACT_NAME, BOUNDARY, DISTANCE_THRESHOLD
-
-GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+from src.config import BOUNDARY, DISTANCE_THRESHOLD
 
 # --------------------------------------------------------------------------------------------------
 
-# Load the data from the artifact from the most recent run
+# Load the data
+
+script_dir = os.path.dirname(__file__)
+data_directory_path = os.path.join(script_dir, "..", "data")
+
 with st.spinner("Loading data for the crime map..."):
-    crime_df, labeled_merged_df, merged_df = get_latest_github_artifact_data(
-        repo_name=GITHUB_REPO,
-        workflow_filename=WORKFLOW_FILE_NAME,
-        artifact_name=ARTIFACT_NAME,
-        github_token=GITHUB_TOKEN,
-    )
+    crime_df, labeled_df, merged_df = load_data_from_directory(data_directory_path)
+
+st.dataframe(crime_df.head(10), use_container_width=True)
+st.dataframe(labeled_df.head(10), use_container_width=True)
+st.dataframe(merged_df.head(10), use_container_width=True)
 
 # Extract crime type from the OHE'd columns
 crime_type_cols = [col for col in crime_df.columns if col.startswith("crime_")]

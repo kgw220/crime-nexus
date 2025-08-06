@@ -57,108 +57,30 @@ def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.G
 
 
 @st.cache_data(show_spinner=False)
-def get_latest_github_artifact_data(
-    repo_name: str,
-    workflow_filename: str,
-    artifact_name: str,
-    github_token: str,
-    output_dir: str = "data",
-) -> tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+def load_data_from_directory(
+    data_dir: str = "data",
+) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
-    Downloads the latest artifact from a GitHub Actions workflow and loads the data.
+    Loads data files directly from a specified local directory.
 
-    This function authenticates with the GitHub API, finds the latest successful
-    run of a specified workflow, downloads the specified artifact, extracts its
-    contents, and loads the data into DataFrames/GeoDataFrames.
-
-    Note that this is done since at least one data file will be recorded by LFS, meaning that
-    streamlit cannot access it directly like smaller files. I have saved the data as an artifact to
-    work around this.
+    This function assumes the necessary .pkl files are present in the
+    `data_dir` within the project. It loads the crime data, labeled
+    merged data, and merged data based on filename prefixes.
 
     Parameters:
     ----------
-    repo_name: str
-        The GitHub repository in the format "owner/repo"
-    workflow_filename: str
-        The filename of the workflow (e.g., "daily_run.yml")
-    artifact_name: str
-        The name of the artifact to
-    github_token: str
-        The token to connect to the GitHub API
-    output_dir: str
-        The local directory to extract files into
+    data_dir: str
+        The local directory where the data files are stored.
 
     Returns:
     -------
-    tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]
-        A tuple of the crime data as a pandas DataFrame, a geopandas GeoDataFrame of the merged
-        data with the cluster labels, and a geopandas GeoDataFrame of the merged data without
-        cluster labels
-
-    Raises:
-    -------
-    ValueError:
-        If the GITHUB_TOKEN environment variable is not set
-    RuntimeError:
-        If no successful workflow runs are found
-    FileNotFoundError:
-        If the specified artifact or data files are not found
-    requests.exceptions.HTTPError:
-        If an API request fails
+    Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+        A tuple containing the three loaded dataframes.
     """
-    # Setup call with GitHub token
-    headers = {}
-    headers["Authorization"] = f"Bearer {github_token}"
-
-    # Get latest successful workflow run ID
-    print("\nFetching latest successful workflow run...")
-    runs_url = f"https://api.github.com/repos/{repo_name}/actions/workflows/{workflow_filename}/runs?status=success&per_page=1"
-    runs_resp = requests.get(runs_url, headers=headers)
-    runs_resp.raise_for_status()
-    workflow_runs = runs_resp.json().get("workflow_runs", [])
-    if not workflow_runs:
-        raise RuntimeError("No successful workflow runs found.")
-    run_id = workflow_runs[0]["id"]
-    latest_run = workflow_runs[0]
-    run_date = latest_run["created_at"]
-    print(f"Found latest run ID: {run_id} (Created at: {run_date})")
-
-    # Get artifacts for the latest run
-    print(f"Fetching artifacts for run ID: {run_id}...")
-    artifact_url = f"https://api.github.com/repos/{repo_name}/actions/runs/{run_id}/artifacts"
-    artifact_resp = requests.get(artifact_url, headers=headers)
-    artifact_resp.raise_for_status()
-
-    # Find the correct artifact by name
-    artifacts = artifact_resp.json().get("artifacts", [])
-    if not artifacts:
-        raise FileNotFoundError("No artifacts found for the latest run.")
-    try:
-        artifact = next(a for a in artifacts if a["name"] == artifact_name)
-        print(f"Found artifact: '{artifact_name}' (ID: {artifact['id']})")
-    except StopIteration:
-        raise FileNotFoundError(f"Artifact with name '{artifact_name}' not found.")
-
-    # Download the artifact ZIP
-    print("Downloading artifact ZIP...")
-    download_url = artifact["archive_download_url"]
-    zip_resp = requests.get(download_url, headers=headers, allow_redirects=True)
-    zip_resp.raise_for_status()
-    print("Download complete.")
-
-    # Extract contents into a local folder
-    print(f"Extracting files to '{output_dir}' folder...")
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    with zipfile.ZipFile(io.BytesIO(zip_resp.content)) as z:
-        z.extractall(output_dir)
-    print("Extraction complete.")
-
-    # Finally, load the data from the directory based on the prefix
-    print("\nLoading dataframes from extracted files...")
-    crime_df = load_pickle_by_prefix(output_dir, "crime_data")
-    labeled_df = load_pickle_by_prefix(output_dir, "labeled_merged_data")
-    merged_df = load_pickle_by_prefix(output_dir, "merged_data")
+    print("\nLoading dataframes from local directory...")
+    crime_df = load_pickle_by_prefix(data_dir, "crime_data")
+    labeled_df = load_pickle_by_prefix(data_dir, "labeled_merged_data")
+    merged_df = load_pickle_by_prefix(data_dir, "merged_data")
 
     return crime_df, labeled_df, merged_df
 
