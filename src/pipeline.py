@@ -64,7 +64,7 @@ def main():
     """
     # Define date range to collect data (using a 3-year rolling window up to yesterday)
     END_DATE = (datetime.now() - timedelta(days=1)).date()
-    START_DATE = END_DATE - timedelta(days=365)
+    START_DATE = END_DATE - timedelta(days=160)
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
