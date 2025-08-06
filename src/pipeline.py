@@ -250,6 +250,7 @@ def main():
 
     print("📌📌📌📌📌📌📌📌📌📌Starting mapping part of pipeline!📌📌📌📌📌📌📌📌📌📌")
 
+    print("\n<<<<< 🗺️Creating Folium map of crime data🗺️ >>>>>")
     # Extract crime type from the OHE'd columns
     crime_type_cols = [col for col in crime_df.columns if col.startswith("crime_")]
     for col in crime_type_cols:
@@ -296,8 +297,8 @@ def main():
         name="Philadelphia Boundary",
     ).add_to(m_crime)
 
+    print("\n<<<<< 🗺️Adding layers to map🗺️ >>>>>")
     # Add recent crime, cluster outline, and hotspot layers to the map
-
     m_crime = plot_recent_crimes(m_crime, crime_df, color_map_types)
     m_crime = plot_cluster_outlines(
         m_crime, df_final, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
@@ -307,6 +308,7 @@ def main():
     # Add a control for controlling the layers
     folium.LayerControl().add_to(m_crime)
 
+    print("\n<<<<< 🗺️Setting up legend HTML🗺️ >>>>>")
     # Setting up HTML for crime type legend
     legend_html_start = """
         <div style="position: fixed; 
@@ -346,10 +348,11 @@ def main():
     )
     m_crime.get_root().html.add_child(folium.Element(full_legend_cluster_html))
 
+    print("\n<<<<< 🗺️Saving map HTML🗺️ >>>>>")
     # Save final map as html file
     map_output_path = os.path.join(data_dir, f"map_{START_STR}_to_{END_STR}.html")
     m_crime.save(map_output_path)
-    print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
+    print(f"----------Final map saved to {map_output_path}----------")
 
 
 if __name__ == "__main__":
