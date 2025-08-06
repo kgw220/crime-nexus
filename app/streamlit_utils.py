@@ -339,21 +339,21 @@ def plot_hotspot_analysis(
 
     print("Doing calculations for hotspot analysis")
     # Calculate the Gi* statistic (z-scores) only on cells with data
-    w = weights.Queen.from_dataframe(analysis_grid)
+    w = weights.Queen.from_dataframe(hotspot_grid)
 
     print("Calculating G* local statistic")
-    print("Variance of n_crimes:", analysis_grid["n_crimes"].var())
-    g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
+    print("Variance of n_crimes:", hotspot_grid["n_crimes"].var())
+    g_local = esda.G_Local(hotspot_grid["n_crimes"].values, w)
 
     print("Adding z-scores to the grid")
 
-    analysis_grid["z_score"] = g_local.Zs
+    hotspot_grid["z_score"] = g_local.Zs
 
     print("Mergeing z-scores back into the grid")
 
     # Merge the z-scores back into the full grid for complete visualization
     hotspot_grid = hotspot_grid.merge(
-        analysis_grid[["z_score"]], left_index=True, right_index=True, how="left"
+        hotspot_grid[["z_score"]], left_index=True, right_index=True, how="left"
     )
     # Fill cells with no z-score (0 crimes or islands) with a neutral value of 0
     hotspot_grid["z_score"].fillna(0, inplace=True)
