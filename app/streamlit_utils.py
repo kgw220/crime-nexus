@@ -23,6 +23,9 @@ from sklearn.cluster import DBSCAN
 from typing import Tuple, Union
 
 
+# Define functions regarding retrieving the data ---------------------------------------------------
+
+
 @st.cache_data
 def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
     """
@@ -294,14 +297,12 @@ def plot_hotspot_analysis(
         The updated Folium map object with the hotspot layer
     """
     # Convert df_clustered to a GeoDataFrame and project it for distance calculations
-    print("Converting dataframe")
     clustered_gdf = gpd.GeoDataFrame(
         df_merged_crime,
         geometry=gpd.points_from_xy(df_merged_crime.lon, df_merged_crime.lat),
         crs="EPSG:4326",
     ).to_crs("EPSG:2272")
 
-    print("Making grid for hotspot analysis")
     # Create grid based on the entire Philadelphia boundary for full coverage
     philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
     xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
@@ -325,8 +326,6 @@ def plot_hotspot_analysis(
         x += cell_size
     hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
 
-    print("Aggregating crime in each grid cell")
-
     # Count points from df_clustered in each grid cell
     joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
     crime_counts = joined.groupby("index_right").size().rename("n_crimes")
@@ -338,8 +337,6 @@ def plot_hotspot_analysis(
 
     hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
 
-    print("Aggregating crime in each grid cell")
-
     # Count points from df_clustered in each grid cell
     joined = gpd.sjoin(clustered_gdf, hotspot_grid, how="inner", predicate="within")
     crime_counts = joined.groupby("index_right").size().rename("n_crimes")
@@ -348,19 +345,10 @@ def plot_hotspot_analysis(
     # Create a separate grid for the analysis containing only cells with crime
     analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
-    print("Doing calculations for hotspot analysis")
     # Calculate the Gi* statistic (z-scores) only on cells with data
     w = weights.Queen.from_dataframe(analysis_grid)
-
-    print("Calculating G* local statistic")
-    print("Variance of n_crimes:", analysis_grid["n_crimes"].var())
     g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
-
-    print("Adding z-scores to the grid")
-
     analysis_grid["z_score"] = g_local.Zs
-
-    print("Mergeing z-scores back into the grid")
 
     # Merge the z-scores back into the full grid for complete visualization
     hotspot_grid = hotspot_grid.merge(
@@ -381,7 +369,6 @@ def plot_hotspot_analysis(
     # Create a Choropleth layer for the hotspots; The reversed red/blue colormap is used, so
     # hotspots (identified with darker red) are shown with a higher z score, and coldspots
     # (identified with blue) are shown with a negative/near zero z score.
-    print("Adding hotspot layer to map")
     chlorpleth = folium.Choropleth(
         geo_data=hotspot_data_for_viz.to_crs("EPSG:4326"),
         name="Hotspots",
@@ -425,49 +412,65 @@ def plot_hotspot_analysis(
     return m
 
 
-@st.cache_resource
-def download_map_html(owner, repo, artifact_name, branch, token):
+def add_legend(
+    m: folium.Map, color_map_types: dict, color_map_clusters: dict, alpha_labels: dict
+) -> folium.Map:
     """
-    Finds the latest successful workflow run, downloads the specified artifact,
-    and returns the content of the 'map.html' file.
+    Adds a legend to the Folium map for better visualization of the data layers.
+
+    Parameters:
+    -----------
+    m: folium.Map
+        The Folium map object to which the legend will be added
+    color_map_types: dict
+        A dictionary mapping crime types to hex colors
+    color_map_clusters: dict
+        A dictionary mapping cluster labels to hex colors
+    alpha_labels: dict
+        A dictionary mapping numeric cluster labels to alphabetical labels
+
+    Returns:
+    --------
+    folium.Map
+        The updated Folium map object with the legend added
     """
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    # Setup HTML for crime type legend
+    legend_html_start = """
+     <div style="position: fixed; 
+     bottom: 50px; left: 50px; width: 250px; height: 400px; 
+     border:2px solid grey; z-index:9998; font-size:14px;
+     background-color:white; padding: 10px;">
+     <b>Crime Type Legend</b><br>
+     <div style="height: 90%; overflow-y: auto;">
+     """
+    legend_items = ""
+    for crime_type, color in color_map_types.items():
+        clean_name = crime_type.replace("crime_", "")
+        legend_items += (
+            f'&nbsp; <i class="fa fa-circle" style="color:{color}"></i> &nbsp; {clean_name}<br>'
+        )
+    legend_html_end = "</div></div>"
+    full_legend_html = legend_html_start + legend_items + legend_html_end
+    m.get_root().html.add_child(folium.Element(full_legend_html))
 
-    # Step 1: Find the latest workflow run ID
-    runs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs"
-    params = {"branch": branch, "status": "success", "per_page": 1}
-    response = requests.get(runs_url, headers=headers, params=params)
-    response.raise_for_status()
-    runs_data = response.json()
-
-    if not runs_data["workflow_runs"]:
-        st.error(f"No successful workflow runs found on branch '{branch}'.")
-        return None
-
-    run_id = runs_data["workflow_runs"][0]["id"]
-    st.info(f"Found latest successful workflow run with ID: {run_id}")
-
-    # Step 2: Find the artifact ID
-    artifacts_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
-    response = requests.get(artifacts_url, headers=headers)
-    response.raise_for_status()
-    artifacts_data = response.json()
-
-    target_artifact = next(
-        (a for a in artifacts_data["artifacts"] if a["name"] == artifact_name), None
+    # Set up HTML for cluster legend
+    legend_cluster_html_start = """
+        <div style="position: fixed; 
+        bottom: 50px; right: 50px; width: 150px; height: 225px; 
+        border:2px solid grey; z-index:9999; font-size:14px;
+        background-color:white; padding: 10px;">
+        <b>Cluster Legend</b><br>
+        <div style="height: 90%; overflow-y: auto;">
+        """
+    legend_cluster_items = ""
+    for cluster_label, color in color_map_clusters.items():
+        label_text = f"Cluster {alpha_labels[cluster_label]}" if cluster_label != -1 else "Noise"
+        icon_shape = "tag" if cluster_label != -1 else "times"
+        legend_cluster_items += f'&nbsp; <i class="fa fa-{icon_shape}" style="color:{color}"></i> &nbsp; {label_text}<br>'
+    legend_cluster_html_end = "</div></div>"
+    full_legend_cluster_html = (
+        legend_cluster_html_start + legend_cluster_items + legend_cluster_html_end
     )
-    if not target_artifact:
-        st.error(f"Artifact '{artifact_name}' not found for run ID {run_id}.")
-        return None
+    m.get_root().html.add_child(folium.Element(full_legend_cluster_html))
 
-    # Step 3: Download the artifact (which is a ZIP file)
-    download_url = target_artifact["archive_download_url"]
-    st.info(f"Downloading artifact from: {download_url}")
-    response = requests.get(download_url, headers=headers, stream=True)
-    response.raise_for_status()
-
-    # Step 4: Extract the map.html file from the ZIP archive
-    with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-        with zf.open("map.html") as html_file:
-            st.info("Map file extracted successfully.")
-            return html_file.read().decode("utf-8")
+    return m
