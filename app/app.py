@@ -92,7 +92,7 @@ folium.GeoJson(
 
 print("Initialized map")
 # Add recent crime, cluster outline, and hotspot layers to the map
-m_crime = plot_hotspot_analysis(m_crime, merged_df, philly_gdf)
+m_crime = plot_hotspot_analysis(m_crime, crime_df, philly_gdf)
 
 # m_crime = plot_recent_crimes(m_crime, crime_df, color_map_types)
 # print("Plotted recent crimes on map")
