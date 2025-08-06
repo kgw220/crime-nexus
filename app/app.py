@@ -40,7 +40,6 @@ data_directory_path = os.path.join(script_dir, "..", "data")
 with st.spinner("Loading data for the crime map..."):
     crime_df, labeled_merged_df, merged_df = load_data_from_directory(data_directory_path)
 
-print(type(crime_df), type(labeled_merged_df), type(merged_df))
 
 # Extract crime type from the OHE'd columns
 crime_type_cols = [col for col in crime_df.columns if col.startswith("crime_")]
@@ -96,7 +95,7 @@ m_crime = plot_cluster_outlines(
     m_crime, labeled_merged_df, color_map_clusters, alpha_labels, DISTANCE_THRESHOLD
 )
 print("Plotted cluster outlines on map")
-m_crime = plot_hotspot_analysis(m_crime, merged_df, philly_gdf)
+m_crime = plot_hotspot_analysis(m_crime, crime_df, philly_gdf)
 print("Plotted hotspot analysis on map")
 
 print("Added layers to map")
