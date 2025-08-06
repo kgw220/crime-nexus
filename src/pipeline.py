@@ -31,9 +31,7 @@ from data_utils import (
     run_tpe_search,
     get_best_run_parameters,
     run_final_pipeline,
-    plot_recent_crimes,
-    plot_cluster_outlines,
-    plot_hotspot_analysis,
+    find_hotspots,
 )
 
 # Import configuration constants and API tokens, as defined in config.py in the same directory
@@ -243,6 +241,19 @@ def main():
     )
     df_final.to_pickle(labeled_merged_output_path)
     print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
+
+    # TEST: Perform initial hotspot analysis here, since it is too computationally expensive on
+    # streamlit
+    # Philadelphia county boundary GeoJSON
+    BOUNDARY = (
+        "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
+    )
+    philly_gdf = gpd.read_file(BOUNDARY)
+    hotspot_grid = find_hotspots(final_merged_df, philly_gdf)
+
+    hotspot_grid_output_path = os.path.join(data_dir, f"hotspot_grid_{START_STR}_to_{END_STR}.pkl")
+    hotspot_grid.to_pickle(hotspot_grid_output_path)
+    print(f"----------Final clustered data saved to {hotspot_grid_output_path}----------")
 
 
 if __name__ == "__main__":

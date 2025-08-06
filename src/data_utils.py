@@ -950,3 +950,84 @@ def run_final_pipeline(
         print("<<<<< No high-quality clusters found in the final run. >>>>>")
 
     return df_high_quality
+
+
+# Define functions for hotspot analysis and visualization ----------------------------------
+def find_hotspots(crime_df: pd.DataFrame, philly_gdf: gpd.GeoDataFrame) -> pd.DataFrame:
+    """
+    Performs a hotspot analysis on the given data.
+
+    Parameters:
+    -----------
+    crime_df: pd.DataFrame
+        DataFrame with crime data.
+    philly_gdf: gpd.GeoDataFrame
+        GeoDataFrame containing the Philadelphia boundary.
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame containing the z-scores of the hotspots, ready for visualization.
+    """
+    # Convert crime_dfto a GeoDataFrame and project it for distance calculations
+    crime_gdf = gpd.GeoDataFrame(
+        crime_df,
+        geometry=gpd.points_from_xy(crime_df.lon, crime_df.lat),
+        crs="EPSG:4326",
+    ).to_crs("EPSG:2272")
+
+    # Create grid based on the entire Philadelphia boundary for full coverage
+    philly_gdf_proj = philly_gdf.to_crs("EPSG:2272")
+    xmin, ymin, xmax, ymax = philly_gdf_proj.total_bounds
+    cell_size = 2500  # Grid cell size in feet; can be set higher/lower
+    grid_cells = []
+    x = xmin
+    while x < xmax:
+        y = ymin
+        while y < ymax:
+            grid_cells.append(
+                Polygon(
+                    [
+                        (x, y),
+                        (x + cell_size, y),
+                        (x + cell_size, y + cell_size),
+                        (x, y + cell_size),
+                    ]
+                )
+            )
+            y += cell_size
+        x += cell_size
+    hotspot_grid = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs="EPSG:2272")
+
+    # Count points from df_clustered in each grid cell
+    joined = gpd.sjoin(crime_gdf, hotspot_grid, how="inner", predicate="within")
+    crime_counts = joined.groupby("index_right").size().rename("n_crimes")
+    hotspot_grid = hotspot_grid.merge(crime_counts, left_index=True, right_index=True, how="left")
+
+    hotspot_grid["n_crimes"].fillna(0, inplace=True)
+    # Create a separate grid for the analysis containing only cells with crime
+    analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
+
+    # Calculate the Gi* statistic (z-scores) only on cells with data
+    w = weights.Queen.from_dataframe(analysis_grid)
+    g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
+
+    analysis_grid["z_score"] = g_local.Zs
+
+    # Merge the z-scores back into the full grid for complete visualization
+    hotspot_grid = hotspot_grid.merge(
+        analysis_grid[["z_score"]], left_index=True, right_index=True, how="left"
+    )
+    # Fill cells with no z-score (0 crimes or islands) with a neutral value of 0
+    hotspot_grid["z_score"].fillna(0, inplace=True)
+
+    # Trim the grid to the Philadelphia boundary
+    hotspot_grid_trimmed = gpd.overlay(hotspot_grid, philly_gdf_proj, how="intersection")
+
+    # Reset the index to create a column that can be used as a key
+    hotspot_grid_for_plot = hotspot_grid_trimmed.reset_index()
+
+    # Select only the necessary columns to prevent JSON serialization errors
+    hotspot_data_for_viz = hotspot_grid_for_plot[["index", "z_score", "geometry"]]
+
+    return hotspot_data_for_viz
