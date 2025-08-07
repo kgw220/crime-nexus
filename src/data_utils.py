@@ -8,6 +8,7 @@ import random
 import time
 import zipfile
 
+import dropbox
 import folium
 import geopandas as gpd
 import hdbscan
@@ -16,9 +17,11 @@ import numpy as np
 import pandas as pd
 import requests
 import umap
+import dropbox
 
 from branca.element import Element
 from datetime import datetime, timedelta
+from dropbox.files import WriteMode
 from folium.plugins import MarkerCluster
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from pysal.explore import esda
@@ -26,7 +29,7 @@ from pysal.lib import weights
 from shapely.geometry import MultiPoint, Polygon
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
-from typing import Union
+from typing import Any, List, Union
 
 
 # Define functions for retrieving and wrangling data ----------------------------------------------
@@ -952,7 +955,90 @@ def run_final_pipeline(
     return df_high_quality
 
 
-# Define functions for hotspot analysis and visualization ----------------------------------
+# Define functions for saving data into Dropbox ----------------------------------------------------
+
+
+def upload_sample_file(
+    dropbox_client: dropbox.Dropbox, file: Any, file_name: str, folder_path: str = "/crime_nexus"
+):
+    """
+    Uploads a given file to the specified Dropbox folder.
+
+    Parameters:
+    ----------
+    dropbox_client: dropbox.Dropbox
+        The Dropbox client instance to interact with the API
+    file: Any
+        The file to be uploaded
+    file_name: str
+        The name of the file to be saved in Dropbox
+    folder_path: str
+        The path to the Dropbox folder where files will be deleted
+    """
+    dropbox_path = f"{folder_path}/{file_name}"
+    dropbox_client.files_upload(file.encode(), dropbox_path, mode=WriteMode("overwrite"))
+    print(f"✅ Uploaded '{file_name}' to '{folder_path}'\n")
+
+
+def list_files(
+    dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"
+) -> List[dropbox.files.Metadata]:
+    """
+    Lists all files in the specified Dropbox folder and prints their names.
+
+    Parameters:
+    ----------
+    dropbox_client: dropbox.Dropbox
+        The Dropbox client instance to interact with the API
+    folder_path: str
+        The path to the Dropbox folder where files will be deleted
+
+    Returns:
+    -------
+    List[dropbox.files.Metadata]
+        A list of file metadata entries in the folder, or an empty list if none
+    """
+    try:
+        result = dropbox_client.files_list_folder(folder_path)
+        if not result.entries:
+            print("📁 Folder is empty.\n")
+            return []
+
+        print("📄 Files in folder:")
+        for entry in result.entries:
+            print(f" - {entry.name}")
+        print()
+        return result.entries
+
+    except dropbox.exceptions.ApiError as e:
+        print("❌ Failed to list folder:", e)
+        return []
+
+
+def delete_all_files(dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"):
+    """
+    Deletes all files in the specified Dropbox folder.
+    It first lists all files and then deletes each one.
+
+    Parameters:
+    ----------
+    dropbox_client: dropbox.Dropbox
+        The Dropbox client instance to interact with the API
+    folder_path: str
+        The path to the Dropbox folder where files will be deleted
+    """
+    entries = list_files()
+    deleted = 0
+    for entry in entries:
+        path = f"{folder_path}/{entry.name}"
+        dropbox_client.files_delete_v2(path)
+        deleted += 1
+    print(f"🗑️ Deleted {deleted} file(s).\n")
+
+
+# Define functions for hotspot analysis and visualization ------------------------------------------
+
+
 def find_hotspots(crime_df: pd.DataFrame, philly_gdf: gpd.GeoDataFrame) -> pd.DataFrame:
     """
     Performs a hotspot analysis on the given data.
