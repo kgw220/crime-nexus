@@ -4,8 +4,10 @@ processes, and clusters crime, weather, and census data for the city of Philadel
 the experimental notebooks for more details on how the code is setup!
 """
 
+import dropbox
 import folium
 import geopandas as gpd
+import io
 import matplotlib
 import matplotlib.pyplot as plt
 import mlflow
@@ -26,8 +28,10 @@ from data_utils import (
     get_census_tracts,
     merge_crime_census,
     calculate_population_density,
+    upload_file,
+    list_files,
+    delete_all_files,
     prepare_experiment,
-    cleanup_old_runs,
     run_tpe_search,
     get_best_run_parameters,
     run_final_pipeline,
@@ -38,6 +42,9 @@ from data_utils import (
 from config import (
     NOAA_TOKEN,
     CENSUS_TOKEN,
+    DROPBOX_APP_KEY,
+    DROPBOX_APP_SECRET,
+    DROPBOX_REFRESH_TOKEN,
     CARTO_URL,
     CRIME_TABLE_NAME,
     WEATHER_STATION_ID,
@@ -48,6 +55,7 @@ from config import (
     CENSUS_SHAPE_URL,
     RUN_RETENTION_DAYS,
     NUM_EXPERIMENT_EVALS,
+    FOLDER_PATH,
     SEARCH_SPACE,
     HQ_CLUSTER_LIMIT,
     RANDOM_SEED,
@@ -187,22 +195,22 @@ def main():
     print(yesterday_crime.head())
     print(yesterday_crime.info())
 
-    # Define the base directory (project root) and the data directory path
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_dir = os.path.join(base_dir, "data")
+    # # Define the base directory (project root) and the data directory path
+    # base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # data_dir = os.path.join(base_dir, "data")
 
-    # Create the directory if it doesn't exist
-    os.makedirs(data_dir, exist_ok=True)
+    # # Create the directory if it doesn't exist
+    # os.makedirs(data_dir, exist_ok=True)
 
-    # Construct the full output path and save the file
-    recent_crime_output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
-    yesterday_crime.to_pickle(recent_crime_output_path)
-    print(f"💾Yesterday's crime data saved to {recent_crime_output_path}💾")
+    # # Construct the full output path and save the file
+    # recent_crime_output_path = os.path.join(data_dir, f"crime_data_{END_STR}.pkl")
+    # yesterday_crime.to_pickle(recent_crime_output_path)
+    # print(f"💾Yesterday's crime data saved to {recent_crime_output_path}💾")
 
-    # Save the merged data from entire rolling window (for hotspot analysis)
-    merged_output_path = os.path.join(data_dir, f"merged_data_{START_STR}_to_{END_STR}.pkl")
-    final_merged_df.to_pickle(merged_output_path)
-    print(f"💾Merged crime data saved to {merged_output_path}💾")
+    # # Save the merged data from entire rolling window (for hotspot analysis)
+    # merged_output_path = os.path.join(data_dir, f"merged_data_{START_STR}_to_{END_STR}.pkl")
+    # final_merged_df.to_pickle(merged_output_path)
+    # print(f"💾Merged crime data saved to {merged_output_path}💾")
 
     # Part 2: Clustering----------------------------------------------------------------------------
 
@@ -236,13 +244,13 @@ def main():
         seed=RANDOM_SEED,
         max_clusters=HQ_CLUSTER_LIMIT,
     )
-    labeled_merged_output_path = os.path.join(
-        data_dir, f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl"
-    )
-    df_final.to_pickle(labeled_merged_output_path)
-    print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
+    # labeled_merged_output_path = os.path.join(
+    #     data_dir, f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl"
+    # )
+    # df_final.to_pickle(labeled_merged_output_path)
+    # print(f"----------Final clustered data saved to {labeled_merged_output_path}----------")
 
-    # TEST: Perform initial hotspot analysis here, since it is too computationally expensive on
+    # Perform initial hotspot analysis here, since it is too computationally expensive on
     # streamlit
     # Philadelphia county boundary GeoJSON
     BOUNDARY = (
@@ -251,9 +259,70 @@ def main():
     philly_gdf = gpd.read_file(BOUNDARY)
     hotspot_grid = find_hotspots(final_merged_df, philly_gdf)
 
-    hotspot_grid_output_path = os.path.join(data_dir, f"hotspot_grid_{START_STR}_to_{END_STR}.pkl")
-    hotspot_grid.to_pickle(hotspot_grid_output_path)
-    print(f"----------Hotspot data saved to {hotspot_grid_output_path}----------")
+    # hotspot_grid_output_path = os.path.join(data_dir, f"hotspot_grid_{START_STR}_to_{END_STR}.pkl")
+    # hotspot_grid.to_pickle(hotspot_grid_output_path)
+    # print(f"----------Hotspot data saved to {hotspot_grid_output_path}----------")
+
+    # Part 3: Saving the data ----------------------------------------------------------------------
+
+    print("📌📌📌📌📌📌📌📌📌📌Saving data!📌📌📌📌📌📌📌📌📌📌")
+
+    # Initialize the Dropbox client with OAuth2 credentials and refresh token.
+    # The SDK will auto-refresh access tokens when they expire.
+    dbx = dropbox.Dropbox(
+        oauth2_refresh_token=DROPBOX_REFRESH_TOKEN,
+        app_key=DROPBOX_APP_KEY,
+        app_secret=DROPBOX_APP_SECRET,
+    )
+
+    # Convert final data results as bytes, and store to Dropbox
+    buffer = io.BytesIO()
+
+    yesterday_crime.to_pickle(buffer)
+    buffer.seek(0)
+    upload_file(
+        dropbox_client=dbx,
+        file=buffer.read(),
+        folder_path=FOLDER_PATH,
+        file_name=f"crime_data_{END_STR}.pkl",
+    )
+    # Reset buffer for the next upload
+    buffer.seek(0)
+    buffer.truncate(0)
+
+    final_merged_df.to_pickle(buffer)
+    buffer.seek(0)
+    upload_file(
+        dropbox_client=dbx,
+        file=buffer.read(),
+        folder_path=FOLDER_PATH,
+        file_name=f"merged_data_{START_STR}_to_{END_STR}.pkl",
+    )
+    # Reset buffer for the next upload
+    buffer.seek(0)
+    buffer.truncate(0)
+
+    df_final.to_pickle(buffer)
+    buffer.seek(0)
+    upload_file(
+        dropbox_client=dbx,
+        file=buffer.read(),
+        folder_path=FOLDER_PATH,
+        file_name=f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl",
+    )
+    # Reset buffer for the next upload
+    buffer.seek(0)
+    buffer.truncate(0)
+
+    hotspot_grid.to_pickle(buffer)
+    buffer.seek(0)
+    upload_file(
+        dropbox_client=dbx,
+        file=buffer.read(),
+        folder_path=FOLDER_PATH,
+        file_name=f"hotspot_grid_{START_STR}_to_{END_STR}.pkl",
+    )
+    print(f"----------Logged all data to Dropbox App----------")
 
 
 if __name__ == "__main__":

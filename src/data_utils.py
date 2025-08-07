@@ -958,8 +958,11 @@ def run_final_pipeline(
 # Define functions for saving data into Dropbox ----------------------------------------------------
 
 
-def upload_sample_file(
-    dropbox_client: dropbox.Dropbox, file: Any, file_name: str, folder_path: str = "/crime_nexus"
+def upload_file(
+    dropbox_client: dropbox.Dropbox,
+    file_bytes: bytes,
+    file_name: str,
+    folder_path: str = "/crime_nexus",
 ):
     """
     Uploads a given file to the specified Dropbox folder.
@@ -968,15 +971,15 @@ def upload_sample_file(
     ----------
     dropbox_client: dropbox.Dropbox
         The Dropbox client instance to interact with the API
-    file: Any
-        The file to be uploaded
+    file_bytes: bytes
+        The file to be uploaded, in bytes
     file_name: str
         The name of the file to be saved in Dropbox
     folder_path: str
         The path to the Dropbox folder where files will be deleted
     """
     dropbox_path = f"{folder_path}/{file_name}"
-    dropbox_client.files_upload(file.encode(), dropbox_path, mode=WriteMode("overwrite"))
+    dropbox_client.files_upload(file_bytes, dropbox_path, mode=WriteMode("overwrite"))
     print(f"✅ Uploaded '{file_name}' to '{folder_path}'\n")
 
 

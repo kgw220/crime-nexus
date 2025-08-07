@@ -32,6 +32,9 @@ CENSUS_SHAPE_URL = (
 PHILLY_COUNTY_FIPS = "101"
 PA_STATE_FIPS = "42"
 
+# Folder path to store files in Dropbox
+FOLDER_PATH = "/crime_nexus"
+
 # Hyperopt space
 SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
