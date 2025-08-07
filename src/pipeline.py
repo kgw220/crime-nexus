@@ -65,9 +65,6 @@ def main():
     """
     Main function to run the entire data pipeline from fetching to clustering.
     """
-    print(DROPBOX_REFRESH_TOKEN)
-    print(DROPBOX_APP_KEY)
-    print(DROPBOX_APP_SECRET)
     # Define date range to collect data (using a 3-year rolling window up to yesterday)
     END_DATE = (datetime.now() - timedelta(days=1)).date()
     START_DATE = END_DATE - timedelta(days=365)
@@ -276,6 +273,17 @@ def main():
         app_key=DROPBOX_APP_KEY,
         app_secret=DROPBOX_APP_SECRET,
     )
+
+    # Ensure folder exists
+    try:
+        dbx.files_get_metadata(FOLDER_PATH)
+    except dropbox.exceptions.ApiError as e:
+        if isinstance(e.error, dropbox.files.GetMetadataError) or "not_found" in str(e).lower():
+            dbx.files_create_folder_v2(FOLDER_PATH)
+            print(f"📁 Created Dropbox folder: {FOLDER_PATH}")
+        else:
+            raise
+
     # Print all the pre-existing files in the Dropbox folder
     print(f"----------Files in Dropbox folder {FOLDER_PATH} before upload:----------")
     list_files(dbx, FOLDER_PATH)
