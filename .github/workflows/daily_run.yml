@@ -68,15 +68,15 @@ jobs:
         run: python src/pipeline.py
 
       # Commit the newly generated data files back to the repository, excluding the map html
-      - name: Commit and push the new data file
-        run: |
-          # Configure git with the bot's identity for the commit
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          # Add all files in the 'data/' directory to the staging area
-          # '-f' flag forces adding files
-          git add -f data/
-          # Commit and push the changes
-          git commit -m "Added HQ clustered data and yesterday's crime data" || echo "No changes to commit"
-          # Push the changes to the repository's main branch.
-          git push 
+      # - name: Commit and push the new data file
+      #   run: |
+      #     # Configure git with the bot's identity for the commit
+      #     git config --global user.name 'github-actions[bot]'
+      #     git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      #     # Add all files in the 'data/' directory to the staging area
+      #     # '-f' flag forces adding files
+      #     git add -f data/
+      #     # Commit and push the changes
+      #     git commit -m "Added HQ clustered data and yesterday's crime data" || echo "No changes to commit"
+      #     # Push the changes to the repository's main branch.
+      #     git push 
