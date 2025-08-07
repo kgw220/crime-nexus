@@ -116,9 +116,9 @@ def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid):
     # Initialize Folium map centered at mean lat/lon of crime
     m_crime = folium.Map(
         location=[crime_df["lat"].mean(), crime_df["lon"].mean()],
-        zoom_start=12,
+        zoom_start=11,
         max_bounds=map_bounds,
-        min_zoom=12,
+        min_zoom=11,
         width="100%",
         height="100%",
     )
