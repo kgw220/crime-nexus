@@ -17,7 +17,6 @@ import uuid
 
 from datetime import datetime, timedelta
 
-
 from data_utils import (
     fetch_crime_data,
     clean_crime_data,
@@ -269,11 +268,19 @@ def main():
 
     # Initialize the Dropbox client with OAuth2 credentials and refresh token.
     # The SDK will auto-refresh access tokens when they expire.
+    print(DROPBOX_REFRESH_TOKEN)
+    print(DROPBOX_APP_KEY)
+    print(DROPBOX_APP_SECRET)
     dbx = dropbox.Dropbox(
         oauth2_refresh_token=DROPBOX_REFRESH_TOKEN,
         app_key=DROPBOX_APP_KEY,
         app_secret=DROPBOX_APP_SECRET,
     )
+    # Print all the pre-existing files in the Dropbox folder
+    print(f"----------Files in Dropbox folder {FOLDER_PATH} before upload:----------")
+    list_files(dbx, FOLDER_PATH)
+    print(f"----------Deleting in Dropbox folder {FOLDER_PATH} before uploading:----------")
+    delete_all_files(dbx, FOLDER_PATH)
 
     # Convert final data results as bytes, and store to Dropbox
     buffer = io.BytesIO()
@@ -323,6 +330,9 @@ def main():
         file_name=f"hotspot_grid_{START_STR}_to_{END_STR}.pkl",
     )
     print(f"----------Logged all data to Dropbox App----------")
+
+    print(f"----------Files in Dropbox folder {FOLDER_PATH} after upload:----------")
+    list_files(dbx, FOLDER_PATH)
 
 
 if __name__ == "__main__":
