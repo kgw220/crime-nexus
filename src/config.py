@@ -11,6 +11,9 @@ from hyperopt import hp
 # Read API tokens from environment variables
 NOAA_TOKEN = os.getenv("NOAA_TOKEN")
 CENSUS_TOKEN = os.getenv("CENSUS_TOKEN")
+DROPBOX_APP_KEY = os.getenv("DROPBOX_APP_KEY")
+DROPBOX_APP_SECRET = os.getenv("DROPBOX_APP_SECRET")
+DROPBOX_REFRESH_TOKEN = os.getenv("DROPBOX_REFRESH_TOKEN")
 
 # Data sources
 CARTO_URL = "https://phl.carto.com/api/v2/sql"
