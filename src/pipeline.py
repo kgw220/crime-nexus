@@ -297,7 +297,7 @@ def main():
     buffer.seek(0)
     upload_file(
         dropbox_client=dbx,
-        file=buffer.read(),
+        file_bytes=buffer.read(),
         folder_path=FOLDER_PATH,
         file_name=f"crime_data_{END_STR}.pkl",
     )
@@ -321,7 +321,7 @@ def main():
     buffer.seek(0)
     upload_file(
         dropbox_client=dbx,
-        file=buffer.read(),
+        file_bytes=buffer.read(),
         folder_path=FOLDER_PATH,
         file_name=f"labeled_merged_data_{START_STR}_to_{END_STR}.pkl",
     )
@@ -333,7 +333,7 @@ def main():
     buffer.seek(0)
     upload_file(
         dropbox_client=dbx,
-        file=buffer.read(),
+        file_bytes=buffer.read(),
         folder_path=FOLDER_PATH,
         file_name=f"hotspot_grid_{START_STR}_to_{END_STR}.pkl",
     )
