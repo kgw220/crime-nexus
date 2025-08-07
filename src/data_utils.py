@@ -1030,7 +1030,7 @@ def delete_all_files(dropbox_client: dropbox.Dropbox, folder_path: str = "/crime
     folder_path: str
         The path to the Dropbox folder where files will be deleted
     """
-    entries = list_files()
+    entries = list_files(dropbox_client, folder_path)
     deleted = 0
     for entry in entries:
         path = f"{folder_path}/{entry.name}"
