@@ -43,12 +43,12 @@ jobs:
       - name: Install Python dependencies
         run: pip install numpy==1.26.4 -r requirements_actions.txt
 
-        # Remove any pre-existing data files, as I only want to keep the latest data
-      - name: Clean old data files
-        run: |
-          # The '-f' flag forces deletion without prompting and prevents errors
-          # if the files don't exist
-          rm -f data/*.pkl || echo "No .pkl files to delete."
+      #   # Remove any pre-existing data files, as I only want to keep the latest data
+      # - name: Clean old data files
+      #   run: |
+      #     # The '-f' flag forces deletion without prompting and prevents errors
+      #     # if the files don't exist
+      #     rm -f data/*.pkl || echo "No .pkl files to delete."
 
       # Create the 'data' directory if it doesn't already exist.
       # The '-p' flag prevents errors if the directory is already there.
@@ -65,6 +65,9 @@ jobs:
           EXPERIMENT_NAME: ${{ secrets.EXPERIMENT_NAME }}
           NOAA_TOKEN: ${{ secrets.NOAA_TOKEN }}
           CENSUS_TOKEN: ${{ secrets.CENSUS_TOKEN }}
+          DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
+          DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+          DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
         run: python src/pipeline.py
 
       # Commit the newly generated data files back to the repository, excluding the map html
