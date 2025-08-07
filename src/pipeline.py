@@ -65,6 +65,9 @@ def main():
     """
     Main function to run the entire data pipeline from fetching to clustering.
     """
+    print(DROPBOX_REFRESH_TOKEN)
+    print(DROPBOX_APP_KEY)
+    print(DROPBOX_APP_SECRET)
     # Define date range to collect data (using a 3-year rolling window up to yesterday)
     END_DATE = (datetime.now() - timedelta(days=1)).date()
     START_DATE = END_DATE - timedelta(days=365)
@@ -268,9 +271,6 @@ def main():
 
     # Initialize the Dropbox client with OAuth2 credentials and refresh token.
     # The SDK will auto-refresh access tokens when they expire.
-    print(DROPBOX_REFRESH_TOKEN)
-    print(DROPBOX_APP_KEY)
-    print(DROPBOX_APP_SECRET)
     dbx = dropbox.Dropbox(
         oauth2_refresh_token=DROPBOX_REFRESH_TOKEN,
         app_key=DROPBOX_APP_KEY,
