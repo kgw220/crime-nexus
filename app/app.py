@@ -57,7 +57,21 @@ dbx = init_dropbox_client()
 with st.spinner("Loading data for the crime map..."):
     crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(dbx, FOLDER_PATH)
 
-# Add a sidebar for filtering and information
+# Remove whitespace from sidebar
+st.markdown(
+    """
+    <style>
+        [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+            padding-top: 0rem;
+        }
+        [data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
+            padding-top: 0rem;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 with st.sidebar:
     st.markdown(
         """
