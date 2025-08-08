@@ -129,11 +129,19 @@ def get_dropbox_folder_metadata(dbx: dropbox.Dropbox, folder_path: str) -> dict:
     print("--- Checking Dropbox for file updates... ---")
     try:
         result = dbx.files_list_folder(folder_path)
-        return {
+
+        # Create the dictionary of metadata
+        metadata_to_return = {
             entry.name: entry.server_modified.isoformat()
             for entry in result.entries
             if isinstance(entry, dropbox.files.FileMetadata)
         }
+
+        # NEW DEBUG LINE: This will show us exactly what is being returned.
+        print(f"DEBUGGING: The metadata being returned is: {metadata_to_return}")
+
+        return metadata_to_return
+
     except dropbox.exceptions.ApiError as err:
         st.error(f"Error fetching metadata from Dropbox folder '{folder_path}': {err}")
         return {}
