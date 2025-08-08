@@ -65,6 +65,8 @@ with st.sidebar:
             font-family: 'Roboto Mono', monospace;
             color: #E5E5E5;
             text-align: center;
+            margin-top: -15px; /* Pulls the title up */
+            margin-bottom: 0px; /* Removes space below the title */
             text-shadow: 
                 0 0 5px #00BFFF, 
                 0 0 10px #00BFFF, 
@@ -72,8 +74,7 @@ with st.sidebar:
                 0 0 40px #1E90FF, 
                 0 0 80px #1E90FF;
         ">
-        Crime<br>Nexus
-        </h1>
+        Crime Nexus </h1>
         """,
         unsafe_allow_html=True,
     )
