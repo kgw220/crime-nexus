@@ -494,7 +494,7 @@ def add_legend(
     folium.Map
         The updated Folium map object with the legend added
     """
-    # This single CSS block controls positioning, appearance, and adaptive sizing.
+    # Setup size of legend based on screen size
     legend_css = """
     <style>
       /* --- Base styles for both legends --- */
@@ -543,11 +543,10 @@ def add_legend(
       }
     </style>
     """
-    # Inject the complete CSS into the map's header
+
     m.get_root().header.add_child(folium.Element(legend_css))
 
     # Define Crime Type Legend HTML
-    # MODIFIED: Removed inline styles and added id="crime-legend" and class="legend-container"
     crime_legend_html = """
      <div id="crime-legend" class="legend-container">
        <b>Crime Type Legend</b><br>
