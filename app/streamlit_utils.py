@@ -106,7 +106,7 @@ def init_dropbox_client():
 
 @st.cache_data()
 def _load_dataset_dropbox(
-    dropbox_client: dropbox.Dropbox, folder_path: str, filenames: List[str], prefix: str
+    _dropbox_client: dropbox.Dropbox, folder_path: str, filenames: List[str], prefix: str
 ) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
     """
     Finds, downloads, and loads a single CSV file from Dropbox into a DataFrame.
@@ -117,7 +117,7 @@ def _load_dataset_dropbox(
 
     Parameters:
     ----------
-    dropbox_client: dropbox.Dropbox
+    _dropbox_client: dropbox.Dropbox
         An authenticated Dropbox API client.
     folder_path: str
         The path to the parent folder in Dropbox where the file is located.
@@ -150,7 +150,7 @@ def _load_dataset_dropbox(
 
     # Download the file's binary content and read it into a Pandas DataFrame
     try:
-        _, response = dropbox_client.files_download(file_to_download)
+        _, response = _dropbox_client.files_download(file_to_download)
         # Use io.BytesIO to treat the binary content as a file-like object
         return pd.read_pickle(io.BytesIO(response.content))
 
