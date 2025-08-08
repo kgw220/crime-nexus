@@ -60,6 +60,7 @@ folder_meta = get_dropbox_folder_metadata(dbx, FOLDER_PATH)
 
 if folder_meta:
     current_folder_signature = str(folder_meta)
+    print(f"Current folder signature: {current_folder_signature}")
 
     with st.spinner("Loading data for the crime map..."):
         crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
