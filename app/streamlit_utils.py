@@ -494,44 +494,6 @@ def add_legend(
     folium.Map
         The updated Folium map object with the legend added
     """
-    # Add adaptive CSS for the legend to make it responsive based on screen size
-    adaptive_css = """
-    <style>
-        #crime-legend { width: 250px; height: 400px; font-size: 14px; }
-        #cluster-legend { width: 150px; height: 225px; font-size: 14px; }
-        @media (max-width: 1200px) {
-            #crime-legend { width: 180px; height: 250px; font-size: 12px; }
-            #cluster-legend { width: 130px; height: 200px; font-size: 12px; }
-        }
-    </style>
-    """
-    m.get_root().header.add_child(folium.Element(adaptive_css))
-
-    toggle_js = """
-    <script type='text/javascript'>
-      function toggleLegends() {
-        var crimeLegend = document.getElementById('crime-legend');
-        var clusterLegend = document.getElementById('cluster-legend');
-        if (crimeLegend.style.display === 'none' || crimeLegend.style.display === '') {
-          crimeLegend.style.display = 'block';
-          clusterLegend.style.display = 'block';
-        } else {
-          crimeLegend.style.display = 'none';
-          clusterLegend.style.display = 'none';
-        }
-      }
-    </script>"""
-
-    toggle_button_html = """
-    <div style="position: fixed; top: 20px; right: 20px; z-index:10000;">
-      <button onclick="toggleLegends()" style="background-color: white; border: 2px solid grey; 
-      padding: 5px 10px; font-size: 14px; cursor: pointer;">Toggle Legends</button>
-    </div>"""
-
-    # Add the JavaScript and the button to the map
-    m.get_root().html.add_child(folium.Element(toggle_js))
-    m.get_root().html.add_child(folium.Element(toggle_button_html))
-
     # Setup HTML for crime type legend
     legend_html_start = """
      <div style="position: fixed; 
@@ -570,6 +532,45 @@ def add_legend(
         legend_cluster_html_start + legend_cluster_items + legend_cluster_html_end
     )
     m.get_root().html.add_child(folium.Element(full_legend_cluster_html))
+
+    # Add adaptive CSS for the legend to make it responsive based on screen size
+    adaptive_css = """
+    <style>
+        #crime-legend { width: 250px; height: 400px; font-size: 14px; }
+        #cluster-legend { width: 150px; height: 225px; font-size: 14px; }
+        @media (max-width: 1200px) {
+            #crime-legend { width: 180px; height: 250px; font-size: 12px; }
+            #cluster-legend { width: 130px; height: 200px; font-size: 12px; }
+        }
+    </style>
+    """
+    m.get_root().header.add_child(folium.Element(adaptive_css))
+
+    # Add a toggle button to show/hide the legends
+    toggle_js = """
+    <script type='text/javascript'>
+      function toggleLegends() {
+        var crimeLegend = document.getElementById('crime-legend');
+        var clusterLegend = document.getElementById('cluster-legend');
+        if (crimeLegend.style.display === 'none' || crimeLegend.style.display === '') {
+          crimeLegend.style.display = 'block';
+          clusterLegend.style.display = 'block';
+        } else {
+          crimeLegend.style.display = 'none';
+          clusterLegend.style.display = 'none';
+        }
+      }
+    </script>"""
+
+    toggle_button_html = """
+    <div style="position: fixed; top: 20px; right: 20px; z-index:10000;">
+      <button onclick="toggleLegends()" style="background-color: white; border: 2px solid grey; 
+      padding: 5px 10px; font-size: 14px; cursor: pointer;">Toggle Legends</button>
+    </div>"""
+
+    # Add the JavaScript and the button to the map
+    m.get_root().html.add_child(folium.Element(toggle_js))
+    m.get_root().html.add_child(folium.Element(toggle_button_html))
 
     return m
 
