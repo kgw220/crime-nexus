@@ -3,6 +3,7 @@ Related utilies for loading data from the pipeline, and plotting map layers for 
 project.
 """
 
+import ast
 import io
 import os
 import zipfile
@@ -129,7 +130,7 @@ def get_dropbox_folder_metadata(dbx: dropbox.Dropbox, folder_path: str) -> dict:
     try:
         result = dbx.files_list_folder(folder_path)
         return {
-            entry.name: entry.server_modified
+            entry.name: entry.server_modified.isoformat()
             for entry in result.entries
             if isinstance(entry, dropbox.files.FileMetadata)
         }
@@ -238,7 +239,7 @@ def load_dropbox_datasets(
         If a file fails to download or be read by Pandas
     """
     print(f"--- Loading fresh datasets from Dropbox. Signature: {folder_signature} ---")
-    filenames = list(eval(folder_signature).keys())
+    filenames = list(ast.literal_eval(folder_signature).keys())
 
     # Load each dataset
     crime_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "crime_")
