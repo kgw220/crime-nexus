@@ -43,15 +43,6 @@ st.set_page_config(layout="wide")
 
 # --------------------------------------------------------------------------------------------------
 
-# Move data loading outside of the tab blocks to prevent re-running on every tab switch
-script_dir = os.path.dirname(__file__)
-data_directory_path = os.path.join(script_dir, "..", "data")
-
-# with st.spinner("Loading data for the crime map..."):
-#     crime_df, labeled_merged_df, merged_df, hotspot_grid = load_data_from_directory(
-#         data_directory_path
-#     )
-
 # Initialize the Dropbox client
 dbx = init_dropbox_client()
 
@@ -140,6 +131,7 @@ for col in crime_type_cols:
 crime_df["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
 
 
+# Cache map creation so it does not get recreated every time the app runs
 @st.cache_resource(show_spinner=False)
 def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid):
     # --- Map rendering logic ---
@@ -203,14 +195,14 @@ def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid):
     return map_html_string
 
 
+# Map viewer tab
 with tab1:
     map_html_string = create_and_render_map(crime_df, labeled_merged_df, hotspot_grid)
     # Display the HTML string in Streamlit
     components.html(map_html_string, width=1600, height=700)
 
+# Data downloaded tab
 with tab2:
-    # --- Data Downloader logic ---
-
     # Undo the one-hot encoding and clean the data for download
     labeled_merged_df_clean = reverse_ohe_and_clean(
         labeled_merged_df, ["crime_", "psa_", "district_"]
@@ -258,7 +250,6 @@ with tab2:
     # We will use the alphabetical labels for a better user experience
     available_clusters = sorted(labeled_merged_df["cluster_alpha_label"].unique())
 
-    # Use st.session_state to manage the selected cluster
     if "selected_cluster" not in st.session_state:
         st.session_state.selected_cluster = available_clusters[0]
 

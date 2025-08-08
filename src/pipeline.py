@@ -58,6 +58,7 @@ from config import (
     SEARCH_SPACE,
     HQ_CLUSTER_LIMIT,
     RANDOM_SEED,
+    BOUNDARY,
 )
 
 
@@ -251,16 +252,8 @@ def main():
 
     # Perform initial hotspot analysis here, since it is too computationally expensive on
     # streamlit
-    # Philadelphia county boundary GeoJSON
-    BOUNDARY = (
-        "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
-    )
     philly_gdf = gpd.read_file(BOUNDARY)
     hotspot_grid = find_hotspots(final_merged_df, philly_gdf)
-
-    # hotspot_grid_output_path = os.path.join(data_dir, f"hotspot_grid_{START_STR}_to_{END_STR}.pkl")
-    # hotspot_grid.to_pickle(hotspot_grid_output_path)
-    # print(f"----------Hotspot data saved to {hotspot_grid_output_path}----------")
 
     # Part 3: Saving the data ----------------------------------------------------------------------
 

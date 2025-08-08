@@ -28,69 +28,6 @@ from typing import List, Tuple, Union
 # Define functions regarding retrieving the data ---------------------------------------------------
 
 
-# @st.cache_data
-# def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
-#     """
-#     Finds and loads a pickle file from a folder based on a filename prefix.
-
-#     Parameters:
-#     ----------
-#     folder: str
-#         The directory to search for the file
-#     prefix: str
-#         The starting string of the filename to find
-
-#     Returns:
-#     -------
-#     Union[pd.DataFrame, gpd.GeoDataFrame]:
-#         The loaded data from the pickle file, which can be either a pandas or geopandas DataFrame
-
-#     Raises:
-#     ------
-#     FileNotFoundError:
-#         If no file with the specified prefix is found
-#     """
-#     matches = [f for f in os.listdir(folder) if f.startswith(prefix)]
-#     if not matches:
-#         raise FileNotFoundError(f"No file with prefix '{prefix}' found in {folder}")
-#     file_path = os.path.join(folder, matches[0])
-
-#     print(f"Loading file: {file_path}")
-#     df = pd.read_pickle(file_path)
-
-#     return df
-
-
-# @st.cache_data(show_spinner=False)
-# def load_data_from_directory(
-#     data_dir: str = "data",
-# ) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
-#     """
-#     Loads data files directly from a specified local directory.
-
-#     This function assumes the necessary .pkl files are present in the
-#     `data_dir` within the project. It loads the crime data, labeled
-#     merged data, and merged data based on filename prefixes.
-
-#     Parameters:
-#     ----------
-#     data_dir: str
-#         The local directory where the data files are stored.
-
-#     Returns:
-#     -------
-#     Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
-#         A tuple containing the three loaded dataframes.
-#     """
-#     print("\nLoading dataframes from local directory...")
-#     crime_df = load_pickle_by_prefix(data_dir, "crime_data")
-#     labeled_df = load_pickle_by_prefix(data_dir, "labeled_merged_data")
-#     merged_df = load_pickle_by_prefix(data_dir, "merged_data")
-#     hotspot_df = load_pickle_by_prefix(data_dir, "hotspot_grid")
-
-#     return crime_df, labeled_df, merged_df, hotspot_df
-
-
 @st.cache_resource
 def init_dropbox_client():
     """
@@ -136,9 +73,6 @@ def get_dropbox_folder_metadata(dbx: dropbox.Dropbox, folder_path: str) -> dict:
             for entry in result.entries
             if isinstance(entry, dropbox.files.FileMetadata)
         }
-
-        # NEW DEBUG LINE: This will show us exactly what is being returned.
-        print(f"DEBUGGING: The metadata being returned is: {metadata_to_return}")
 
         return metadata_to_return
 

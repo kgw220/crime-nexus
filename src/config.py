@@ -59,3 +59,6 @@ HQ_CLUSTER_LIMIT = 10
 
 # Random seed to get the psuedo random number generator
 RANDOM_SEED = 42
+
+# Philadelphia county boundary GeoJSON
+BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
