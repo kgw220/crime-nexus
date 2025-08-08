@@ -59,7 +59,25 @@ with st.spinner("Loading data for the crime map..."):
 
 # Add a sidebar for filtering and information
 with st.sidebar:
-    st.title("Crime Nexus")
+    st.markdown(
+        """
+        <h1 style="
+            font-family: 'Roboto Mono', monospace;
+            color: #E5E5E5;
+            text-align: center;
+            text-shadow: 
+                0 0 5px #00BFFF, 
+                0 0 10px #00BFFF, 
+                0 0 20px #00BFFF, 
+                0 0 40px #1E90FF, 
+                0 0 80px #1E90FF;
+        ">
+        Crime<br>Nexus
+        </h1>
+        """,
+        unsafe_allow_html=True,
+    )
+
     st.markdown(
         "This app visualizes recent crime data, clusters, and hotspots in Philadelphia. "
         "Use the Layer Control at the top right corner of the map to toggle layers on and off for"
@@ -69,6 +87,7 @@ with st.sidebar:
         "EST."
     )
     st.markdown("---")
+    st.markdown("📊Date Ranges📊")
     st.markdown(
         f"➼ Recent crime on the map shows crimes for "
         f"**{crime_df['dispatch_date'].min().strftime('%Y-%m-%d')}** \n\n"
