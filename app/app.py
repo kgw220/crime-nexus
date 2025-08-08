@@ -60,15 +60,15 @@ with st.spinner("Loading data for the crime map..."):
 # Remove whitespace from sidebar
 st.markdown(
     """
-    <style>
-        [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
-            padding-top: 0rem;
-        }
-        [data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
-            padding-top: 0rem;
-        }
-    </style>
-    """,
+        <style>
+               .block-container {
+                    padding-top: 1rem;
+                    padding-bottom: 3rem;
+                    padding-left: 5rem;
+                    padding-right: 5rem;
+                }
+        </style>
+        """,
     unsafe_allow_html=True,
 )
 
