@@ -535,15 +535,34 @@ def add_legend(
 
     # Add adaptive CSS for the legend to make it responsive based on screen size
     adaptive_css = """
-    <style>
-        #crime-legend { width: 250px; height: 400px; font-size: 14px; }
-        #cluster-legend { width: 150px; height: 225px; font-size: 14px; }
-        @media (max-width: 1200px) {
-            #crime-legend { width: 180px; height: 250px; font-size: 12px; }
-            #cluster-legend { width: 130px; height: 200px; font-size: 12px; }
+        <style>
+        /* Default styles for larger screens */
+        #crime-legend {
+            width: 250px !important;
+            height: 400px !important;
+            font-size: 14px !important;
         }
-    </style>
-    """
+        #cluster-legend {
+            width: 150px !important;
+            height: 225px !important;
+            font-size: 14px !important;
+        }
+
+        /* Styles for screens 1200px or narrower */
+        @media (max-width: 1200px) {
+            #crime-legend {
+            width: 180px !important;
+            height: 250px !important;
+            font-size: 12px !important;
+            }
+            #cluster-legend {
+            width: 130px !important;
+            height: 200px !important;
+            font-size: 12px !important;
+            }
+        }
+        </style>
+        """
     m.get_root().header.add_child(folium.Element(adaptive_css))
 
     # Add a toggle button to show/hide the legends
@@ -563,10 +582,13 @@ def add_legend(
     </script>"""
 
     toggle_button_html = """
-    <div style="position: fixed; top: 20px; right: 20px; z-index:10000;">
-      <button onclick="toggleLegends()" style="background-color: white; border: 2px solid grey; 
-      padding: 5px 10px; font-size: 14px; cursor: pointer;">Toggle Legends</button>
-    </div>"""
+    <div style="position: fixed; bottom: 20px; right: 20px; z-index:10000;">
+    <button onclick="toggleLegends()"
+            style="background-color: white; border: 2px solid grey; padding: 5px 10px; font-size: 14px; cursor: pointer;">
+        Toggle Legends
+    </button>
+    </div>
+    """
 
     # Add the JavaScript and the button to the map
     m.get_root().html.add_child(folium.Element(toggle_js))
