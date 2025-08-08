@@ -160,7 +160,7 @@ def _load_dataset_dropbox(
         ) from err
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl="30m")
 def load_dropbox_datasets(
     _dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"
 ) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
