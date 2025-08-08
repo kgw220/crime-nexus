@@ -57,12 +57,17 @@ dbx = init_dropbox_client()
 
 # Get folder signature to check if the folder has changed
 folder_meta = get_dropbox_folder_metadata(dbx, FOLDER_PATH)
-current_folder_signature = str(folder_meta)
 
-with st.spinner("Loading data for the crime map..."):
-    crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
-        dbx, FOLDER_PATH, current_folder_signature
-    )
+if folder_meta:
+    current_folder_signature = str(folder_meta)
+
+    with st.spinner("Loading data for the crime map..."):
+        crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
+            dbx, FOLDER_PATH, current_folder_signature
+        )
+else:
+    st.warning("Could not load the data. Please refresh the application and try again.")
+    st.stop()
 
 # Remove whitespace from sidebar
 st.markdown(
