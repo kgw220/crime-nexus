@@ -23,6 +23,7 @@ from streamlit_folium import st_folium
 
 from streamlit_utils import (
     init_dropbox_client,
+    get_dropbox_folder_metadata,
     load_dropbox_datasets,
     plot_cluster_outlines,
     plot_hotspot_analysis,
@@ -54,15 +55,21 @@ data_directory_path = os.path.join(script_dir, "..", "data")
 # Initialize the Dropbox client
 dbx = init_dropbox_client()
 
+# Get folder signature to check if the folder has changed
+folder_meta = get_dropbox_folder_metadata(dbx, FOLDER_PATH)
+current_folder_signature = str(folder_meta)
+
 with st.spinner("Loading data for the crime map..."):
-    crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(dbx, FOLDER_PATH)
+    crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
+        dbx, FOLDER_PATH, current_folder_signature
+    )
 
 # Remove whitespace from sidebar
 st.markdown(
     """
         <style>
                .block-container {
-                    padding-top: 3rem;
+                    padding-top: 5rem;
                     padding-bottom: 3rem;
                     padding-left: 5rem;
                     padding-right: 5rem;

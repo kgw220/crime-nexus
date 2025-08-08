@@ -104,6 +104,40 @@ def init_dropbox_client():
     return dbx
 
 
+def get_dropbox_folder_metadata(dbx: dropbox.Dropbox, folder_path: str) -> dict:
+    """
+    Gets metadata for all files in a Dropbox folder to detect changes.
+
+    This function is NOT cached. It runs on every script execution to fetch the
+    latest list of files and their modification times (`server_modified`). This
+    metadata is then used to create a "signature" for the folder's current state.
+
+    Parameters:
+    ----------
+    dbx: dropbox.Dropbox
+        An authenticated Dropbox API client
+    folder_path: str
+        The path to the folder in Dropbox
+
+    Returns:
+    -------
+    dict
+        A dictionary mapping filenames to their last modification time, e.g.,
+        {'crime_data.pkl': datetime.datetime(2025, 8, 8, 21, 5, 12), ...}
+    """
+    print("--- Checking Dropbox for file updates... ---")
+    try:
+        result = dbx.files_list_folder(folder_path)
+        return {
+            entry.name: entry.server_modified
+            for entry in result.entries
+            if isinstance(entry, dropbox.files.FileMetadata)
+        }
+    except dropbox.exceptions.ApiError as err:
+        st.error(f"Error fetching metadata from Dropbox folder '{folder_path}': {err}")
+        return {}
+
+
 @st.cache_data()
 def _load_dataset_dropbox(
     _dropbox_client: dropbox.Dropbox, folder_path: str, filenames: List[str], prefix: str
@@ -162,7 +196,7 @@ def _load_dataset_dropbox(
 
 @st.cache_data(show_spinner=False, ttl="30m")
 def load_dropbox_datasets(
-    _dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"
+    _dropbox_client: dropbox.Dropbox, folder_signature: str, folder_path: str = "/crime_nexus"
 ) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Load specific datasets from a Dropbox folder into four Pandas DataFrames or Geopandas
@@ -180,7 +214,10 @@ def load_dropbox_datasets(
     ----------
     dropbox_client: dropbox.Dropbox
         An authenticated Dropbox client/session
-    folder_path : str
+    folder_signature: str
+        A unique string generated from the folder's file metadata. This acts as
+        the cache invalidation key
+    folder_path: str
         Path to the folder in Dropbox where the files are stored
 
     Returns:
@@ -200,16 +237,8 @@ def load_dropbox_datasets(
     IOError
         If a file fails to download or be read by Pandas
     """
-    # First, get a list of all file names in the target folder
-    try:
-        result = _dropbox_client.files_list_folder(folder_path)
-        filenames = [
-            entry.name for entry in result.entries if isinstance(entry, dropbox.files.FileMetadata)
-        ]
-    except dropbox.exceptions.ApiError as err:
-        raise FileNotFoundError(
-            f"Could not access Dropbox folder '{folder_path}'. Error: {err}"
-        ) from err
+    print(f"--- Loading fresh datasets from Dropbox. Signature: {folder_signature} ---")
+    filenames = list(eval(folder_signature).keys())
 
     # Load each dataset
     crime_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "crime_")
