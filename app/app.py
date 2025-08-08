@@ -63,7 +63,7 @@ if folder_meta:
 
     with st.spinner("Loading data for the crime map..."):
         crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
-            dbx, FOLDER_PATH, current_folder_signature
+            dbx, current_folder_signature, FOLDER_PATH
         )
 else:
     st.warning("Could not load the data. Please refresh the application and try again.")
