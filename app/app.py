@@ -7,6 +7,7 @@ subset data to particular attributes during hotspot analysis, and allowing the u
 application to download specific clusters of data for further analysis.
 """
 
+import dropbox
 import folium
 import geopandas as gpd
 import matplotlib.colors
@@ -21,7 +22,8 @@ import traceback
 from streamlit_folium import st_folium
 
 from streamlit_utils import (
-    load_data_from_directory,
+    init_dropbox_client,
+    load_dropbox_datasets,
     plot_cluster_outlines,
     plot_hotspot_analysis,
     plot_recent_crimes,
@@ -31,9 +33,15 @@ from streamlit_utils import (
 
 # Philadelphia county boundary GeoJSON
 BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
-
 # Distance threshold for clustering crimes into outlines (in feet)
 DISTANCE_THRESHOLD = 1000
+# Dropbox API credentials (ideally would load this from config.py, but this would require including
+# other modules from that file, and there are python version compatibility issues w/ those modules)
+DROPBOX_APP_KEY = os.getenv("DROPBOX_APP_KEY")
+DROPBOX_APP_SECRET = os.getenv("DROPBOX_APP_SECRET")
+DROPBOX_REFRESH_TOKEN = os.getenv("DROPBOX_REFRESH_TOKEN")
+# Folder path where data files are stored in Dropbox
+FOLDER_PATH = "/crime_nexus"
 
 st.set_page_config(layout="wide")
 
@@ -43,10 +51,16 @@ st.set_page_config(layout="wide")
 script_dir = os.path.dirname(__file__)
 data_directory_path = os.path.join(script_dir, "..", "data")
 
+# with st.spinner("Loading data for the crime map..."):
+#     crime_df, labeled_merged_df, merged_df, hotspot_grid = load_data_from_directory(
+#         data_directory_path
+#     )
+
+# Initialize the Dropbox client
+dbx = init_dropbox_client()
+
 with st.spinner("Loading data for the crime map..."):
-    crime_df, labeled_merged_df, merged_df, hotspot_grid = load_data_from_directory(
-        data_directory_path
-    )
+    crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(dbx, FOLDER_PATH)
 
 # Add a sidebar for filtering and information
 with st.sidebar:

@@ -7,6 +7,7 @@ import io
 import os
 import zipfile
 
+import dropbox
 import folium
 import geopandas as gpd
 import numpy as np
@@ -20,73 +21,205 @@ from pysal.explore import esda
 from pysal.lib import weights
 from shapely.geometry import MultiPoint, Polygon
 from sklearn.cluster import DBSCAN
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 
 # Define functions regarding retrieving the data ---------------------------------------------------
 
 
-@st.cache_data
-def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
+# @st.cache_data
+# def load_pickle_by_prefix(folder: str, prefix: str) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
+#     """
+#     Finds and loads a pickle file from a folder based on a filename prefix.
+
+#     Parameters:
+#     ----------
+#     folder: str
+#         The directory to search for the file
+#     prefix: str
+#         The starting string of the filename to find
+
+#     Returns:
+#     -------
+#     Union[pd.DataFrame, gpd.GeoDataFrame]:
+#         The loaded data from the pickle file, which can be either a pandas or geopandas DataFrame
+
+#     Raises:
+#     ------
+#     FileNotFoundError:
+#         If no file with the specified prefix is found
+#     """
+#     matches = [f for f in os.listdir(folder) if f.startswith(prefix)]
+#     if not matches:
+#         raise FileNotFoundError(f"No file with prefix '{prefix}' found in {folder}")
+#     file_path = os.path.join(folder, matches[0])
+
+#     print(f"Loading file: {file_path}")
+#     df = pd.read_pickle(file_path)
+
+#     return df
+
+
+# @st.cache_data(show_spinner=False)
+# def load_data_from_directory(
+#     data_dir: str = "data",
+# ) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+#     """
+#     Loads data files directly from a specified local directory.
+
+#     This function assumes the necessary .pkl files are present in the
+#     `data_dir` within the project. It loads the crime data, labeled
+#     merged data, and merged data based on filename prefixes.
+
+#     Parameters:
+#     ----------
+#     data_dir: str
+#         The local directory where the data files are stored.
+
+#     Returns:
+#     -------
+#     Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+#         A tuple containing the three loaded dataframes.
+#     """
+#     print("\nLoading dataframes from local directory...")
+#     crime_df = load_pickle_by_prefix(data_dir, "crime_data")
+#     labeled_df = load_pickle_by_prefix(data_dir, "labeled_merged_data")
+#     merged_df = load_pickle_by_prefix(data_dir, "merged_data")
+#     hotspot_df = load_pickle_by_prefix(data_dir, "hotspot_grid")
+
+#     return crime_df, labeled_df, merged_df, hotspot_df
+
+
+@st.cache_resource
+def init_dropbox_client():
     """
-    Finds and loads a pickle file from a folder based on a filename prefix.
+    Initializes the Dropbox client, cached to run only once.
+    """
+    print("--- Initializing Dropbox Client ---")
+    dbx = dropbox.Dropbox(
+        oauth2_refresh_token=st.secrets["DROPBOX_REFRESH_TOKEN"],
+        app_key=st.secrets["DROPBOX_APP_KEY"],
+        app_secret=st.secrets["DROPBOX_APP_SECRET"],
+    )
+    return dbx
+
+
+@st.cache_data()
+def _load_dataset_dropbox(
+    dropbox_client: dropbox.Dropbox, folder_path: str, filenames: List[str], prefix: str
+) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
+    """
+    Finds, downloads, and loads a single CSV file from Dropbox into a DataFrame.
+
+    This helper function searches a provided list of filenames for one starting with a
+    specific prefix. It then constructs the full file path, downloads it from
+    Dropbox, and parses the CSV content into a Pandas DataFrame.
 
     Parameters:
     ----------
-    folder: str
-        The directory to search for the file
+    dropbox_client: dropbox.Dropbox
+        An authenticated Dropbox API client.
+    folder_path: str
+        The path to the parent folder in Dropbox where the file is located.
+    filenames: List[str]
+        A list of filenames available in the specified Dropbox folder.
     prefix: str
-        The starting string of the filename to find
+        The prefix of the filename to search for (e.g., "crime_").
 
     Returns:
     -------
-    Union[pd.DataFrame, gpd.GeoDataFrame]:
-        The loaded data from the pickle file, which can be either a pandas or geopandas DataFrame
+    Union[pd.DataFrame, gpd.GeoDataFrame]
+        A DataFrame containing the data
 
     Raises:
     ------
-    FileNotFoundError:
-        If no file with the specified prefix is found
+    FileNotFoundError
+        If no file in `filenames` starts with the given `prefix`
+    IOError
+        If the file download from Dropbox fails or if the content cannot be
+        parsed into a DataFrame
     """
-    matches = [f for f in os.listdir(folder) if f.startswith(prefix)]
-    if not matches:
-        raise FileNotFoundError(f"No file with prefix '{prefix}' found in {folder}")
-    file_path = os.path.join(folder, matches[0])
+    # Find the first file that matches the specified prefix
+    matched_files = [f for f in filenames if f.startswith(prefix)]
 
-    print(f"Loading file: {file_path}")
-    df = pd.read_pickle(file_path)
+    if not matched_files:
+        raise FileNotFoundError(f"No file found in '{folder_path}' with prefix '{prefix}'")
 
-    return df
+    # Construct the full path for the file to be downloaded
+    file_to_download = f"{folder_path}/{matched_files[0]}"
+
+    # Download the file's binary content and read it into a Pandas DataFrame
+    try:
+        _, response = dropbox_client.files_download(file_to_download)
+        # Use io.BytesIO to treat the binary content as a file-like object
+        return pd.read_pickle(io.BytesIO(response.content))
+
+    except dropbox.exceptions.ApiError as err:
+        raise IOError(
+            f"Failed to download '{file_to_download}' from Dropbox. Error: {err}"
+        ) from err
 
 
 @st.cache_data(show_spinner=False)
-def load_data_from_directory(
-    data_dir: str = "data",
-) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+def load_dropbox_datasets(
+    dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"
+) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
-    Loads data files directly from a specified local directory.
+    Load specific datasets from a Dropbox folder into four Pandas DataFrames or Geopandas
+    GeoDataFrames.
 
-    This function assumes the necessary .pkl files are present in the
-    `data_dir` within the project. It loads the crime data, labeled
-    merged data, and merged data based on filename prefixes.
+    This function searches a given Dropbox folder for four CSV files, each identified
+    by a unique prefix, and returns them as separate DataFrames. The required
+    file prefixes are:
+        - "crime_"
+        - "hotspot_grid"
+        - "merged_"
+        - "labeled_merged_"
 
     Parameters:
     ----------
-    data_dir: str
-        The local directory where the data files are stored.
+    dropbox_client: dropbox.Dropbox
+        An authenticated Dropbox client/session
+    folder_path : str
+        Path to the folder in Dropbox where the files are stored
 
     Returns:
     -------
-    Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
-        A tuple containing the three loaded dataframes.
-    """
-    print("\nLoading dataframes from local directory...")
-    crime_df = load_pickle_by_prefix(data_dir, "crime_data")
-    labeled_df = load_pickle_by_prefix(data_dir, "labeled_merged_data")
-    merged_df = load_pickle_by_prefix(data_dir, "merged_data")
-    hotspot_df = load_pickle_by_prefix(data_dir, "hotspot_grid")
+    Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]
+        A tuple containing four DataFrames in the following order:
+        1. Crime dataset
+        2. Hotspot grid dataset
+        3. Merged dataset
+        4. Labeled merged dataset
 
-    return crime_df, labeled_df, merged_df, hotspot_df
+    Raises:
+    ------
+    FileNotFoundError
+        If the specified folder doesn't exist or if any of the required files
+        with the specified prefixes are missing
+    IOError
+        If a file fails to download or be read by Pandas
+    """
+    # First, get a list of all file names in the target folder
+    try:
+        result = dropbox_client.files_list_folder(folder_path)
+        filenames = [
+            entry.name for entry in result.entries if isinstance(entry, dropbox.files.FileMetadata)
+        ]
+    except dropbox.exceptions.ApiError as err:
+        raise FileNotFoundError(
+            f"Could not access Dropbox folder '{folder_path}'. Error: {err}"
+        ) from err
+
+    # Load each dataset
+    crime_df = _load_dataset_dropbox(dropbox_client, folder_path, filenames, "crime_")
+    hotspot_grid_df = _load_dataset_dropbox(dropbox_client, folder_path, filenames, "hotspot_grid")
+    merged_df = _load_dataset_dropbox(dropbox_client, folder_path, filenames, "merged_")
+    labeled_merged_df = _load_dataset_dropbox(
+        dropbox_client, folder_path, filenames, "labeled_merged_"
+    )
+
+    return crime_df, hotspot_grid_df, merged_df, labeled_merged_df
 
 
 # Define functions regarding mapping the data ------------------------------------------------------
