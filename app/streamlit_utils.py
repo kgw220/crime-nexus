@@ -514,15 +514,15 @@ def add_legend(
 
       /* --- Positioning and Sizing for large screens (using IDs) --- */
       #crime-legend {
-        bottom: 50px;
-        left: 50px;
+        bottom: 20px;
+        left: 20px;
         width: 250px;
         height: 400px;
         font-size: 14px;
       }
       #cluster-legend {
-        bottom: 50px;
-        right: 50px;
+        bottom: 20px;
+        right: 20px;
         width: 150px;
         height: 225px;
         font-size: 14px;
