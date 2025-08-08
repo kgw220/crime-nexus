@@ -494,105 +494,89 @@ def add_legend(
     folium.Map
         The updated Folium map object with the legend added
     """
-    # Setup HTML for crime type legend
-    legend_html_start = """
-     <div style="position: fixed; 
-     bottom: 50px; left: 50px; width: 250px; height: 400px; 
-     border:2px solid grey; z-index:9998; font-size:14px;
-     background-color:white; padding: 10px;">
-     <b>Crime Type Legend</b><br>
-     <div style="height: 90%; overflow-y: auto;">
-     """
-    legend_items = ""
-    for crime_type, color in color_map_types.items():
-        clean_name = crime_type.replace("crime_", "")
-        legend_items += (
-            f'&nbsp; <i class="fa fa-circle" style="color:{color}"></i> &nbsp; {clean_name}<br>'
-        )
-    legend_html_end = "</div></div>"
-    full_legend_html = legend_html_start + legend_items + legend_html_end
-    m.get_root().html.add_child(folium.Element(full_legend_html))
+    # This single CSS block controls positioning, appearance, and adaptive sizing.
+    legend_css = """
+    <style>
+      /* --- Base styles for both legends --- */
+      .legend-container {
+        position: fixed;
+        border: 2px solid grey;
+        z-index: 9999;
+        background-color: white;
+        padding: 10px;
+        font-family: Arial, sans-serif;
+      }
+      .legend-scroll {
+        height: 90%;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
 
-    # Set up HTML for cluster legend
-    legend_cluster_html_start = """
-        <div style="position: fixed; 
-        bottom: 50px; right: 50px; width: 150px; height: 225px; 
-        border:2px solid grey; z-index:9999; font-size:14px;
-        background-color:white; padding: 10px;">
-        <b>Cluster Legend</b><br>
-        <div style="height: 90%; overflow-y: auto;">
-        """
-    legend_cluster_items = ""
-    for cluster_label, color in color_map_clusters.items():
-        label_text = f"Cluster {alpha_labels[cluster_label]}" if cluster_label != -1 else "Noise"
-        icon_shape = "tag" if cluster_label != -1 else "times"
-        legend_cluster_items += f'&nbsp; <i class="fa fa-{icon_shape}" style="color:{color}"></i> &nbsp; {label_text}<br>'
-    legend_cluster_html_end = "</div></div>"
-    full_legend_cluster_html = (
-        legend_cluster_html_start + legend_cluster_items + legend_cluster_html_end
-    )
-    m.get_root().html.add_child(folium.Element(full_legend_cluster_html))
-
-    # Add adaptive CSS for the legend to make it responsive based on screen size
-    adaptive_css = """
-        <style>
-        /* Default styles for larger screens */
+      /* --- Positioning and Sizing for large screens (using IDs) --- */
+      #crime-legend {
+        bottom: 50px;
+        left: 50px;
+        width: 250px;
+        height: 400px;
+        font-size: 14px;
+      }
+      #cluster-legend {
+        bottom: 50px;
+        right: 50px;
+        width: 150px;
+        height: 225px;
+        font-size: 14px;
+      }
+      
+      /* --- Adaptive Sizing for smaller screens (using a media query) --- */
+      @media (max-width: 1200px) {
         #crime-legend {
-            width: 250px !important;
-            height: 400px !important;
-            font-size: 14px !important;
+          width: 180px;
+          height: 250px;
+          font-size: 12px;
         }
         #cluster-legend {
-            width: 150px !important;
-            height: 225px !important;
-            font-size: 14px !important;
-        }
-
-        /* Styles for screens 1200px or narrower */
-        @media (max-width: 1200px) {
-            #crime-legend {
-            width: 180px !important;
-            height: 250px !important;
-            font-size: 12px !important;
-            }
-            #cluster-legend {
-            width: 130px !important;
-            height: 200px !important;
-            font-size: 12px !important;
-            }
-        }
-        </style>
-        """
-    m.get_root().header.add_child(folium.Element(adaptive_css))
-
-    # Add a toggle button to show/hide the legends
-    toggle_js = """
-    <script type='text/javascript'>
-      function toggleLegends() {
-        var crimeLegend = document.getElementById('crime-legend');
-        var clusterLegend = document.getElementById('cluster-legend');
-        if (crimeLegend.style.display === 'none' || crimeLegend.style.display === '') {
-          crimeLegend.style.display = 'block';
-          clusterLegend.style.display = 'block';
-        } else {
-          crimeLegend.style.display = 'none';
-          clusterLegend.style.display = 'none';
+          width: 130px;
+          height: 200px;
+          font-size: 12px;
         }
       }
-    </script>"""
-
-    toggle_button_html = """
-    <div style="position: fixed; bottom: 20px; right: 20px; z-index:10000;">
-    <button onclick="toggleLegends()"
-            style="background-color: white; border: 2px solid grey; padding: 5px 10px; font-size: 14px; cursor: pointer;">
-        Toggle Legends
-    </button>
-    </div>
+    </style>
     """
+    # Inject the complete CSS into the map's header
+    m.get_root().header.add_child(folium.Element(legend_css))
 
-    # Add the JavaScript and the button to the map
-    m.get_root().html.add_child(folium.Element(toggle_js))
-    m.get_root().html.add_child(folium.Element(toggle_button_html))
+    # Define Crime Type Legend HTML
+    # MODIFIED: Removed inline styles and added id="crime-legend" and class="legend-container"
+    crime_legend_html = """
+     <div id="crime-legend" class="legend-container">
+       <b>Crime Type Legend</b><br>
+       <div class="legend-scroll">
+    """
+    for crime_type, color in color_map_types.items():
+        clean_name = crime_type.replace("crime_", "").title()
+        crime_legend_html += (
+            f'&nbsp; <i class="fa fa-circle" style="color:{color}"></i> &nbsp; {clean_name}<br>'
+        )
+    crime_legend_html += "</div></div>"
+
+    m.get_root().html.add_child(folium.Element(crime_legend_html))
+
+    # Define Cluster Legend HTML
+    cluster_legend_html = """
+     <div id="cluster-legend" class="legend-container">
+       <b>Cluster Legend</b><br>
+       <div class="legend-scroll">
+    """
+    for cluster_label, color in color_map_clusters.items():
+        label_text = (
+            f"Cluster {alpha_labels.get(cluster_label, 'N/A')}" if cluster_label != -1 else "Noise"
+        )
+        icon_shape = "tag" if cluster_label != -1 else "times"
+        cluster_legend_html += f'&nbsp; <i class="fa fa-{icon_shape}" style="color:{color}"></i> &nbsp; {label_text}<br>'
+    cluster_legend_html += "</div></div>"
+
+    m.get_root().html.add_child(folium.Element(cluster_legend_html))
 
     return m
 
