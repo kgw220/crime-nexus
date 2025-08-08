@@ -162,7 +162,7 @@ def _load_dataset_dropbox(
 
 @st.cache_data(show_spinner=False)
 def load_dropbox_datasets(
-    dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"
+    _dropbox_client: dropbox.Dropbox, folder_path: str = "/crime_nexus"
 ) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Load specific datasets from a Dropbox folder into four Pandas DataFrames or Geopandas
@@ -202,7 +202,7 @@ def load_dropbox_datasets(
     """
     # First, get a list of all file names in the target folder
     try:
-        result = dropbox_client.files_list_folder(folder_path)
+        result = _dropbox_client.files_list_folder(folder_path)
         filenames = [
             entry.name for entry in result.entries if isinstance(entry, dropbox.files.FileMetadata)
         ]
@@ -212,11 +212,11 @@ def load_dropbox_datasets(
         ) from err
 
     # Load each dataset
-    crime_df = _load_dataset_dropbox(dropbox_client, folder_path, filenames, "crime_")
-    hotspot_grid_df = _load_dataset_dropbox(dropbox_client, folder_path, filenames, "hotspot_grid")
-    merged_df = _load_dataset_dropbox(dropbox_client, folder_path, filenames, "merged_")
+    crime_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "crime_")
+    hotspot_grid_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "hotspot_grid")
+    merged_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "merged_")
     labeled_merged_df = _load_dataset_dropbox(
-        dropbox_client, folder_path, filenames, "labeled_merged_"
+        _dropbox_client, folder_path, filenames, "labeled_merged_"
     )
 
     return crime_df, hotspot_grid_df, merged_df, labeled_merged_df
