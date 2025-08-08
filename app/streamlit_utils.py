@@ -442,33 +442,6 @@ def plot_hotspot_analysis(m: folium.Map, hotspot_grid: gpd.GeoDataFrame) -> foli
         highlight=True,
     ).add_to(m)
 
-    # Add CSS for formatting the chlorpleth legend, so it stands out better with the background of
-    # the map
-    legend_css = """
-    <style>
-        .legend {
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 13px;
-            line-height: 1.4;
-            box-shadow: 0 0 4px rgba(0,0,0,0.4);
-            border: 1px solid rgba(0,0,0,0.2);
-        }
-
-        .legend text, .legend-title {
-            text-shadow:
-                0 0 2px #fff,
-                -1px -1px 0 #fff,
-                1px -1px 0 #fff,
-                -1px 1px 0 #fff,
-                1px 1px 0 #fff;
-        }
-    </style>
-    """
-    m.get_root().html.add_child(Element(legend_css))
-
     return m
 
 
@@ -512,7 +485,7 @@ def add_legend(
         overflow-x: hidden;
       }
 
-      /* --- Positioning and Sizing for large screens (using IDs) --- */
+      /* --- Positioning and Sizing for large screens --- */
       #crime-legend {
         bottom: 20px;
         left: 20px;
@@ -527,6 +500,21 @@ def add_legend(
         height: 225px;
         font-size: 14px;
       }
+
+      .legend {
+          background-color: rgba(255, 255, 255, 0.7);
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 13px;
+          box-shadow: 0 0 4px rgba(0,0,0,0.4);
+          border: 1px solid rgba(0,0,0,0.2);
+      }
+      .legend text, .legend-title {
+          text-shadow:
+              0 0 2px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff,
+              -1px 1px 0 #fff, 1px 1px 0 #fff;
+      }
       
       /* --- Adaptive Sizing for smaller screens (using a media query) --- */
       @media (max-width: 1200px) {
@@ -539,6 +527,10 @@ def add_legend(
           width: 130px;
           height: 200px;
           font-size: 12px;
+        }
+        .legend {
+          transform: scale(0.85); 
+          transform-origin: top right; 
         }
       }
     </style>
