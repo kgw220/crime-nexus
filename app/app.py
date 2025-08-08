@@ -35,11 +35,6 @@ from streamlit_utils import (
 BOUNDARY = "https://raw.githubusercontent.com/blackmad/neighborhoods/master/philadelphia.geojson"
 # Distance threshold for clustering crimes into outlines (in feet)
 DISTANCE_THRESHOLD = 1000
-# Dropbox API credentials (ideally would load this from config.py, but this would require including
-# other modules from that file, and there are python version compatibility issues w/ those modules)
-DROPBOX_APP_KEY = os.getenv("DROPBOX_APP_KEY")
-DROPBOX_APP_SECRET = os.getenv("DROPBOX_APP_SECRET")
-DROPBOX_REFRESH_TOKEN = os.getenv("DROPBOX_REFRESH_TOKEN")
 # Folder path where data files are stored in Dropbox
 FOLDER_PATH = "/crime_nexus"
 
