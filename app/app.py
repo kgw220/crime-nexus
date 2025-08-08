@@ -76,7 +76,6 @@ with st.sidebar:
         f"**{labeled_merged_df['dispatch_date'].min().strftime('%Y-%m-%d')} to "
         f"{labeled_merged_df['dispatch_date'].max().strftime('%Y-%m-%d')}**"
     )
-    st.markdown("---")
 
 # --- Main App UI ---
 tab1, tab2 = st.tabs(["Map Viewer", "Data Downloader"])
