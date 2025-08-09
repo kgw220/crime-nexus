@@ -16,8 +16,6 @@ import os
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-import sys
-import traceback
 
 from streamlit_folium import st_folium
 
@@ -63,6 +61,14 @@ st.markdown(
             background-color: #00BFFF !important;
         }
     </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Add the custom preview image
+st.markdown(
+    """
+    <meta property="og:image" content="https://raw.githubusercontent.com/kgw220/crime-nexus/main/app/preview.png">
     """,
     unsafe_allow_html=True,
 )
