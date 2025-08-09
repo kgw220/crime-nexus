@@ -81,7 +81,6 @@ def get_dropbox_folder_metadata(dbx: dropbox.Dropbox, folder_path: str) -> dict:
         return {}
 
 
-@st.cache_data()
 def _load_dataset_dropbox(
     _dropbox_client: dropbox.Dropbox, folder_path: str, filenames: List[str], prefix: str
 ) -> Union[pd.DataFrame, gpd.GeoDataFrame]:
