@@ -41,18 +41,6 @@ FOLDER_PATH = "/crime_nexus"
 
 st.set_page_config(layout="wide")
 
-# Change tab color to blue instead of red
-st.markdown(
-    """
-    <style>
-    .stTabs [data-baseweb="tab-group"] > div:nth-child(1) > div {
-    background-color: blue !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 # Remove whitespace from sidebar
 st.markdown(
     """
@@ -128,7 +116,7 @@ with st.sidebar:
     )
 
 # --- Main App UI ---
-tab1, tab2 = st.tabs(["Map Viewer", "Data Downloader"])
+tab1, tab2 = st.tabs([":blue[Map Viewer]", ":blue[Data Downloader]"])
 
 # Create a mapping for alphabetical cluster labels in the global scope
 unique_clusters = sorted(labeled_merged_df["cluster_label"].unique())
