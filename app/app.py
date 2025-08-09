@@ -111,8 +111,8 @@ with st.sidebar:
         "Use the Layer Control at the top right corner of the map to toggle layers on and off for"
         " better visibility on how crime is distributed in the city. Clusters highlight patterns "
         " with crime (with consideration with census and weather data), and hotspots highlight "
-        "areas that are statistically significant to have more crime. *_Data updates daily by 6PM "
-        "EST*._*"
+        "areas that are statistically significant to have more crime. ***Data updates daily by 6PM "
+        "EST*.***"
     )
     st.markdown("---")
     st.markdown("📊Date Ranges for Current Data📊")
