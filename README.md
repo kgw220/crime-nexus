@@ -1,5 +1,6 @@
 # crime-nexus
 <img width="2506" height="1013" alt="preview" src="https://github.com/user-attachments/assets/a48cc438-11ad-44ab-9787-5679fb92c4c9" />
+
 ## Background
 This project analyzes and visualizes crime data, clusters, and hotspots in Philadelphia, Pennsylvania. Using a daily automated pipeline, the app processes crime, weather, and census data to provide insights into crime distribution. The visualizations are designed to help public health officials and city planners, or curious citizens, to identify areas of concern and understand the factors influencing crime patterns.
 
