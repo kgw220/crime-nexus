@@ -35,7 +35,9 @@ The processed data is then used to generate a rich, interactive map using the Fo
 - Hotspots: Highlighted areas with high crime density.
 
 ## App Features
-The app is hosted here: https://crime-nexus.streamlit.app/
+The app is hosted here: https://crime-nexus.streamlit.app/. I have a brief preview image of the app below:
+
+<img width="2506" height="1013" alt="preview" src="https://github.com/user-attachments/assets/a48cc438-11ad-44ab-9787-5679fb92c4c9" />
 
 The Streamlit app is divided into two tabs:
 
@@ -56,3 +58,40 @@ Additionally, I did consider making a crime prediction model, which would be sim
 To conclude this point, while this project is to some degree, also falling down this pitfall, I am only displaying the crimes that were recorded, not trying to predict crimes. Many of these points are with crime themselves, but the map should be left with some level of scrutiny.
 
 The codebase is structured to be modular and extensible, serving as a solid foundation for these future enhancements, if I ever decide to go forward with these suggestions.
+
+## (Rough) Data Dictionaries 
+
+### Philadelphia Crime
+| Column Name       | Data Type | Description                                                                                     |
+|-------------------|-----------|-------------------------------------------------------------------------------------------------|
+| dc_dist           | string    | The police district where the incident occurred.                                               |
+| psa               | string    | The Police Service Area (PSA), a smaller geographic subdivision of a district.                 |
+| dispatch_date     | string    | The date the call for service was dispatched (YYYY-MM-DD).                                      |
+| dispatch_time     | string    | The time the call for service was dispatched (HH:MI:SS).                                        |
+| hour              | integer   | The hour of the day the call was dispatched (0–23).                                             |
+| text_general_code | string    | The text description for the type of incident (e.g., "Theft", "Assault").                       |
+| location_block    | string    | The street address of the incident, anonymized to the block level.                              |
+| point_y           | float     | The latitude coordinate for the incident location.                                              |
+| point_x           | float     | The longitude coordinate for the incident location.                                             |
+
+### Weather
+| Column                | Data Type | Description                          |
+| --------------------- | --------- | ------------------------------------ |
+| date\_dt              | string    | The date of the weather observation. |
+| avg\_wind\_speed\_mph | float     | Average Wind Speed (miles per hour). |
+| precipitation\_inches | float     | Precipitation (inches).              |
+| snowfall\_inches      | float     | Snowfall (inches).                   |
+| snow\_depth\_inches   | float     | Snow Depth (inches).                 |
+| max\_temp\_f          | float     | Maximum Temperature (°F).            |
+| min\_temp\_f          | float     | Minimum Temperature (°F).            |
+
+### Census 
+| Column                  | Data Type | Description                                  |
+| ----------------------- | --------- | -------------------------------------------- |
+| tract\_fips             | string    | The FIPS code for the census tract.          |
+| pop\_total              | float     | Total Population.                            |
+| income\_median          | integer   | Median Household Income.                     |
+| median\_age             | float     | Median Age.                                  |
+| poverty\_rate           | float     | Percentage of people below the poverty line. |
+| vacancy\_rate           | float     | Percentage of vacant housing units.          |
+| renter\_occupancy\_rate | float     | Percentage of renter-occupied housing units. |
