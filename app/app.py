@@ -125,10 +125,11 @@ with st.sidebar:
     )
     st.markdown("---")
     st.markdown(
-        "**Data is updated with an automated daily script. However, there may be connection"
-        " issues that lead to data not being updated on a given day. In this case, please"
-        " be patient and wait until the next day. In the case where data is several days "
-        "outdated, please raise an issue in the project repo.*"
+        "**Data is updated with a script that runs daily to retrieve new data. However, there may "
+        "be connection issues that lead to data not being updated on a given day. In this case, "
+        "please be patient and wait until the next day or so for an update. But, in the case where "
+        "data is over several days outdated, please raise an issue in the project repo, since there"
+        " is likely a larger issue at hand that prevents new data from being ingested.*"
     )
 
 # --- Main App UI ---
@@ -259,7 +260,8 @@ with tab2:
     st.markdown(
         "Select a cluster below to display and download its raw data. This is for those"
         " that would like to perform further analysis, as the map viewer is primarily for"
-        " visualization purposes and some initial analysis."
+        " visualization purposes and some initial analysis. *This can take around 20 seconds to "
+        "load, so please be patient!*"
     )
 
     # Get a list of unique cluster labels for the selectbox widget
@@ -281,12 +283,15 @@ with tab2:
 
     # Filter the DataFrame based on the selected cluster
     if selected_cluster:
-        filtered_df = processed_download_df[
-            processed_download_df["cluster_alpha_label"] == selected_cluster
-        ]
-        filtered_df = filtered_df.reset_index(drop=True)
-        st.write(f"Displaying data for {len(filtered_df)} rows in cluster **{selected_cluster}**.")
-        st.dataframe(filtered_df)
+        with st.spinner("Loading data for the selected cluster..."):
+            filtered_df = processed_download_df[
+                processed_download_df["cluster_alpha_label"] == selected_cluster
+            ]
+            filtered_df = filtered_df.reset_index(drop=True)
+            st.write(
+                f"Displaying data for {len(filtered_df)} rows in cluster **{selected_cluster}**."
+            )
+            st.dataframe(filtered_df)
 
         # Create a download button for the filtered data
         csv_data = filtered_df.to_csv(index=False)
