@@ -43,13 +43,6 @@ jobs:
       - name: Install Python dependencies
         run: pip install numpy==1.26.4 -r requirements_actions.txt
 
-      #   # Remove any pre-existing data files, as I only want to keep the latest data
-      # - name: Clean old data files
-      #   run: |
-      #     # The '-f' flag forces deletion without prompting and prevents errors
-      #     # if the files don't exist
-      #     rm -f data/*.pkl || echo "No .pkl files to delete."
-
       # Create the 'data' directory if it doesn't already exist.
       # The '-p' flag prevents errors if the directory is already there.
       - name: Create data directory
@@ -69,17 +62,3 @@ jobs:
           DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
           DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
         run: python src/pipeline.py
-
-      # Commit the newly generated data files back to the repository, excluding the map html
-      # - name: Commit and push the new data file
-      #   run: |
-      #     # Configure git with the bot's identity for the commit
-      #     git config --global user.name 'github-actions[bot]'
-      #     git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-      #     # Add all files in the 'data/' directory to the staging area
-      #     # '-f' flag forces adding files
-      #     git add -f data/
-      #     # Commit and push the changes
-      #     git commit -m "Added HQ clustered data and yesterday's crime data" || echo "No changes to commit"
-      #     # Push the changes to the repository's main branch.
-      #     git push 
