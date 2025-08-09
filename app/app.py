@@ -58,8 +58,12 @@ st.markdown(
         }
 
         .stTabs [data-baseweb="tab-list"] button[aria-selected="false"] {
-            color: #E5E5E5; /* A light grey/white for inactive tabs */
+            color: #E5E5E5; 
         }
+
+        .stTabs [data-baseweb="tab"] [aria-selected="true"]::after {
+        border-bottom: 2px solid #00BFFF !important; 
+     }
     </style>
     """,
     unsafe_allow_html=True,
