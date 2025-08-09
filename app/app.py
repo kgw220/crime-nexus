@@ -124,10 +124,12 @@ with st.sidebar:
         f"{labeled_merged_df['dispatch_date'].max().strftime('%Y-%m-%d')}**"
     )
     st.markdown("---")
-    st.markdown("**Data is updated with an automated daily script. However, there may be connection"
-                " issues that lead to data not being updated on a given day. In this case, please"
-                " be patient and wait until the next day. In the case where data is several days "
-                "outdated, please raise an issue in the project repo.*")
+    st.markdown(
+        "**Data is updated with an automated daily script. However, there may be connection"
+        " issues that lead to data not being updated on a given day. In this case, please"
+        " be patient and wait until the next day. In the case where data is several days "
+        "outdated, please raise an issue in the project repo.*"
+    )
 
 # --- Main App UI ---
 tab1, tab2 = st.tabs(["Map Viewer", "Data Downloader"])
@@ -147,7 +149,7 @@ crime_df["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
 
 # Cache map creation so it does not get recreated every time the app runs
 @st.cache_data(show_spinner=False)
-def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid):
+def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid, _cache_key):
     # --- Map rendering logic ---
 
     # Define a color map for each crime type
@@ -211,7 +213,9 @@ def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid):
 
 # Map viewer tab
 with tab1:
-    map_html_string = create_and_render_map(crime_df, labeled_merged_df, hotspot_grid)
+    map_html_string = create_and_render_map(
+        crime_df, labeled_merged_df, hotspot_grid, current_folder_signature
+    )
     # Display the HTML string in Streamlit
     components.html(map_html_string, width=1600, height=700)
 
@@ -219,7 +223,7 @@ with tab1:
 with tab2:
     # Undo the one-hot encoding and clean the data for download
     labeled_merged_df_clean = reverse_ohe_and_clean(
-        labeled_merged_df, ["crime_", "psa_", "district_"]
+        labeled_merged_df, ["crime_", "psa_", "district_"], current_folder_signature
     )
 
     # Convert the datetime column to a string format for better readability
