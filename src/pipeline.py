@@ -18,47 +18,48 @@ import uuid
 from datetime import datetime, timedelta
 
 from data_utils import (
-    fetch_crime_data,
-    clean_crime_data,
-    fetch_weather_data,
-    clean_weather_data,
-    fetch_census_data,
-    clean_census_data,
-    get_census_tracts,
-    merge_crime_census,
     calculate_population_density,
-    upload_file,
-    list_files,
+    clean_census_data,
+    clean_crime_data,
+    clean_weather_data,
     delete_all_files,
-    prepare_experiment,
-    run_tpe_search,
-    get_best_run_parameters,
-    run_final_pipeline,
+    fetch_census_data,
+    fetch_crime_data,
+    fetch_weather_data,
     find_hotspots,
+    get_best_run_parameters,
+    get_census_tracts,
+    list_files,
+    merge_crime_census,
+    prepare_experiment,
+    run_final_pipeline,
+    run_tpe_search,
+    upload_file,
 )
 
 # Import configuration constants and API tokens, as defined in config.py in the same directory
 from config import (
-    NOAA_TOKEN,
+    BOUNDARY,
+    CARTO_URL,
+    CENSUS_API_URL,
+    CENSUS_SHAPE_URL,
     CENSUS_TOKEN,
+    CRIME_TABLE_NAME,
     DROPBOX_APP_KEY,
     DROPBOX_APP_SECRET,
     DROPBOX_REFRESH_TOKEN,
-    CARTO_URL,
-    CRIME_TABLE_NAME,
+    FOLDER_PATH,
+    HQ_CLUSTER_LIMIT,
+    NOAA_TOKEN,
+    NUM_EXPERIMENT_EVALS,
+    PA_STATE_FIPS,
+    PHILLY_COUNTY_FIPS,
+    RANDOM_SEED,
+    RUN_RETENTION_DAYS,
+    SEARCH_SPACE,
     WEATHER_STATION_ID,
     WEATHER_URL,
-    CENSUS_API_URL,
-    PHILLY_COUNTY_FIPS,
-    PA_STATE_FIPS,
-    CENSUS_SHAPE_URL,
-    RUN_RETENTION_DAYS,
-    NUM_EXPERIMENT_EVALS,
-    FOLDER_PATH,
-    SEARCH_SPACE,
-    HQ_CLUSTER_LIMIT,
-    RANDOM_SEED,
-    BOUNDARY,
+    YEARS_TO_COLLECT,
 )
 
 
@@ -68,7 +69,7 @@ def main():
     """
     # Define date range to collect data (using a 2-year rolling window up to yesterday)
     END_DATE = (datetime.now() - timedelta(days=1)).date()
-    START_DATE = END_DATE - timedelta(days=365 * 2)
+    START_DATE = END_DATE - timedelta(days=365 * YEARS_TO_COLLECT)
     START_STR = START_DATE.strftime("%Y-%m-%d")
     END_STR = END_DATE.strftime("%Y-%m-%d")
 
