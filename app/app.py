@@ -261,7 +261,7 @@ with tab2:
     st.markdown(
         "Select a cluster below to display and download its raw data. This is for those"
         " that would like to perform further analysis, as the map viewer is primarily for"
-        "visualization purposes and some initial analysis."
+        " visualization purposes and some initial analysis."
     )
 
     # Get a list of unique cluster labels for the selectbox widget
