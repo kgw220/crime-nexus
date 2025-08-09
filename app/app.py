@@ -283,15 +283,12 @@ with tab2:
 
     # Filter the DataFrame based on the selected cluster
     if selected_cluster:
-        with st.spinner("Loading data for the selected cluster..."):
-            filtered_df = processed_download_df[
-                processed_download_df["cluster_alpha_label"] == selected_cluster
-            ]
-            filtered_df = filtered_df.reset_index(drop=True)
-            st.write(
-                f"Displaying data for {len(filtered_df)} rows in cluster **{selected_cluster}**."
-            )
-            st.dataframe(filtered_df)
+        filtered_df = processed_download_df[
+            processed_download_df["cluster_alpha_label"] == selected_cluster
+        ]
+        filtered_df = filtered_df.reset_index(drop=True)
+        st.write(f"Displaying data for {len(filtered_df)} rows in cluster **{selected_cluster}**.")
+        st.dataframe(filtered_df)
 
         # Create a download button for the filtered data
         csv_data = filtered_df.to_csv(index=False)
