@@ -55,6 +55,11 @@ st.markdown(
 
         .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
             border-bottom: 2px solid #00BFFF;
+            color: #00BFFF; /* Makes the active tab text blue */
+        }
+
+        .stTabs [data-baseweb="tab-list"] button[aria-selected="false"] {
+            color: #E5E5E5; /* A light grey/white for inactive tabs */
         }
     </style>
     """,
