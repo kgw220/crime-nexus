@@ -51,6 +51,14 @@ st.markdown(
             padding-left: 5rem;
             padding-right: 5rem;
         }
+        .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+            border-bottom: 3px solid #00BFFF !important; 
+            color: #00BFFF;
+        }
+
+        .stTabs [data-baseweb="tab-list"] button[aria-selected="false"] {
+            color: #E5E5E5; 
+        }
         .stTabs [data-baseweb="tab-highlight"] {
             background-color: #00BFFF !important;
         }
