@@ -41,35 +41,23 @@ FOLDER_PATH = "/crime_nexus"
 
 st.set_page_config(layout="wide")
 
-# Add CSS to make the tabs blue instead of red
+# Add custom CSS to style the Streamlit app; blue tabs and custom padding
 st.markdown(
     """
     <style>
-    /* Change active tab label color */
-    .stTabs [data-baseweb="tab"] [aria-selected="true"] {
-        color: blue !important;
-    }
-    /* Change active tab underline color */
-    .stTabs [data-baseweb="tab-highlight"] {
-        background-color: blue !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
+        /* This is your existing style for page padding */
+        .block-container {
+            padding-top: 5rem;
+            padding-bottom: 3rem;
+            padding-left: 5rem;
+            padding-right: 5rem;
+        }
 
-# Remove whitespace from sidebar
-st.markdown(
-    """
-        <style>
-               .block-container {
-                    padding-top: 5rem;
-                    padding-bottom: 3rem;
-                    padding-left: 5rem;
-                    padding-right: 5rem;
-                }
-        </style>
-        """,
+        .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+            border-bottom: 2px solid #00BFFF;
+        }
+    </style>
+    """,
     unsafe_allow_html=True,
 )
 
