@@ -68,7 +68,7 @@ st.markdown(
 # Add the custom preview image
 st.markdown(
     """
-    <meta property="og:image" content="https://raw.githubusercontent.com/kgw220/crime-nexus/main/app/preview.png">
+    <meta property="og:image" content="https://raw.githubusercontent.com/kgw220/crime-nexus/3cc0120052cfdd82174164635776ee3fca234d26/app/preview.png>
     """,
     unsafe_allow_html=True,
 )
