@@ -546,7 +546,6 @@ def add_legend(
 # Define functions for other tasks -----------------------------------------------------------------
 
 
-@st.cache_data
 def reverse_ohe_and_clean(_df, ohe_prefixes, _cache_key):
     """
     Reverses one-hot-encoding for specified columns, adds human-readable columns,
