@@ -77,7 +77,7 @@ if folder_meta:
     current_folder_signature = str(folder_meta)
     print(f"Current folder signature: {current_folder_signature}")
 
-    with st.spinner("Loading data for the crime map..."):
+    with st.spinner("Updating the crime map with new data..."):
         crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
             dbx, current_folder_signature, FOLDER_PATH
         )
@@ -112,17 +112,22 @@ with st.sidebar:
         " better visibility on how crime is distributed in the city. Clusters highlight patterns "
         " with crime (with consideration with census and weather data), and hotspots highlight "
         "areas that are statistically significant to have more crime. Data updates daily by 6PM "
-        "EST."
+        "EST*."
     )
     st.markdown("---")
-    st.markdown("📊Date Ranges📊")
+    st.markdown("📊Date Ranges for Current Data📊")
     st.markdown(
-        f"➼ Recent crime on the map shows crimes for "
+        f"➼ Recent crime data on the map reflects crimes recorded on "
         f"**{crime_df['dispatch_date'].min().strftime('%Y-%m-%d')}** \n\n"
-        f"➼ Cluster/Hotspot data on the map shows data from "
+        f"➼ Cluster & Hotspot data on the map reflects data from "
         f"**{labeled_merged_df['dispatch_date'].min().strftime('%Y-%m-%d')} to "
         f"{labeled_merged_df['dispatch_date'].max().strftime('%Y-%m-%d')}**"
     )
+    st.markdown("---")
+    st.markdown("Data is updated with an automated daily script. However, there may be connection"
+                " issues that lead to data not being updated on a given day. In this case, please"
+                " be patient and wait until the next day. In the case where data is several days "
+                "outdated, please raise an issue in the project repo."
 
 # --- Main App UI ---
 tab1, tab2 = st.tabs(["Map Viewer", "Data Downloader"])
@@ -141,7 +146,7 @@ crime_df["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
 
 
 # Cache map creation so it does not get recreated every time the app runs
-@st.cache_resource(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid):
     # --- Map rendering logic ---
 
