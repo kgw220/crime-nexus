@@ -147,8 +147,6 @@ for col in crime_type_cols:
 crime_df["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
 
 
-# Cache map creation so it does not get recreated every time the app runs
-# @st.cache_data(show_spinner=False)
 def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid, _cache_key):
     # --- Map rendering logic ---
 
@@ -219,45 +217,8 @@ with tab1:
     # Display the HTML string in Streamlit
     components.html(map_html_string, width=1600, height=700)
 
-# Data downloaded tab
+# Data downloader tab
 with tab2:
-    # Undo the one-hot encoding and clean the data for download
-    labeled_merged_df_clean = reverse_ohe_and_clean(
-        labeled_merged_df, ["crime_", "psa_", "district_"], current_folder_signature
-    )
-
-    # Convert the datetime column to a string format for better readability
-    labeled_merged_df_clean["dispatch_date"] = labeled_merged_df_clean["dispatch_date"].dt.strftime(
-        "%Y/%m/%d"
-    )
-    labeled_merged_df_clean["dispatch_time"] = labeled_merged_df_clean["dispatch_time"].dt.strftime(
-        "%H:%M:%S"
-    )
-
-    # Rename columns for better readability
-    labeled_merged_df_clean.rename(
-        columns={
-            "district": "police_district",
-            "psa": "police_service_area",
-            "crime": "crime_type",
-        },
-        inplace=True,
-    )
-
-    # Remove unnecessary columns
-    columns_to_remove = [
-        "dispatch_date_dt",
-        "hour_sin",
-        "hour_cos",
-        "month_sin",
-        "month_cos",
-        "day_of_week_sin",
-        "day_of_week_cos",
-        "cluster_label",
-        "geometry",
-    ]
-    processed_download_df = labeled_merged_df_clean.drop(columns=columns_to_remove, errors="ignore")
-
     st.markdown(
         "Select a cluster below to display and download its raw data. This is for those"
         " that would like to perform further analysis, as the map viewer is primarily for"
@@ -281,11 +242,57 @@ with tab2:
     # Update session state on change
     st.session_state.selected_cluster = selected_cluster
 
+    # Initialize progress bar
+    progress_bar = st.progress(0, text=f"Updating data for cluster {selected_cluster}...")
+
+    # --- Perform the filtering and processing of the labeled merged DataFrame ---
+
+    # Undo the one-hot encoding and clean the data for download
+    labeled_merged_df_clean = reverse_ohe_and_clean(
+        labeled_merged_df, ["crime_", "psa_", "district_"], current_folder_signature
+    )
+    progress_bar.progress(20, text=f"Updating data for cluster {selected_cluster}...")
+
+    # Convert the datetime column to a string format for better readability
+    labeled_merged_df_clean["dispatch_date"] = labeled_merged_df_clean["dispatch_date"].dt.strftime(
+        "%Y/%m/%d"
+    )
+    labeled_merged_df_clean["dispatch_time"] = labeled_merged_df_clean["dispatch_time"].dt.strftime(
+        "%H:%M:%S"
+    )
+    progress_bar.progress(40, text=f"Updating data for cluster {selected_cluster}...")
+    # Rename columns for better readability
+    labeled_merged_df_clean.rename(
+        columns={
+            "district": "police_district",
+            "psa": "police_service_area",
+            "crime": "crime_type",
+        },
+        inplace=True,
+    )
+    progress_bar.progress(60, text=f"Updating data for cluster {selected_cluster}...")
+    # Remove unnecessary columns
+    columns_to_remove = [
+        "dispatch_date_dt",
+        "hour_sin",
+        "hour_cos",
+        "month_sin",
+        "month_cos",
+        "day_of_week_sin",
+        "day_of_week_cos",
+        "cluster_label",
+        "geometry",
+    ]
+    processed_download_df = labeled_merged_df_clean.drop(columns=columns_to_remove, errors="ignore")
+    progress_bar.progress(80, text=f"Updating data for cluster {selected_cluster}...")
+
     # Filter the DataFrame based on the selected cluster
     if selected_cluster:
         filtered_df = processed_download_df[
             processed_download_df["cluster_alpha_label"] == selected_cluster
         ]
+        progress_bar.progress(100, text=f"Updated for cluster {selected_cluster}!")
+        progress_bar.empty()
         filtered_df = filtered_df.reset_index(drop=True)
         st.write(f"Displaying data for {len(filtered_df)} rows in cluster **{selected_cluster}**.")
         st.dataframe(filtered_df)
