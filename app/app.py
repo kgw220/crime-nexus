@@ -127,7 +127,7 @@ with st.sidebar:
     st.markdown("Data is updated with an automated daily script. However, there may be connection"
                 " issues that lead to data not being updated on a given day. In this case, please"
                 " be patient and wait until the next day. In the case where data is several days "
-                "outdated, please raise an issue in the project repo."
+                "outdated, please raise an issue in the project repo.")
 
 # --- Main App UI ---
 tab1, tab2 = st.tabs(["Map Viewer", "Data Downloader"])
