@@ -148,7 +148,7 @@ crime_df["crime_type"] = crime_df[crime_type_cols].idxmax(axis=1)
 
 
 # Cache map creation so it does not get recreated every time the app runs
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def create_and_render_map(crime_df, _labeled_merged_df, _hotspot_grid, _cache_key):
     # --- Map rendering logic ---
 
