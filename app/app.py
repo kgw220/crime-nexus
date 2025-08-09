@@ -282,6 +282,7 @@ with tab2:
         filtered_df = processed_download_df[
             processed_download_df["cluster_alpha_label"] == selected_cluster
         ]
+        filtered_df = filtered_df.reset_index()
         st.write(f"Displaying data for {len(filtered_df)} rows in cluster **{selected_cluster}**.")
         st.dataframe(filtered_df)
 
