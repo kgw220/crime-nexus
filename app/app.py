@@ -59,10 +59,6 @@ st.markdown(
         .stTabs [data-baseweb="tab-list"] button[aria-selected="false"] {
             color: #E5E5E5; 
         }
-
-        .stTabs [data-baseweb="tab"] [aria-selected="true"]::after {
-            border-bottom: 2px solid #00BFFF !important; 
-        }
         .stTabs [data-baseweb="tab-highlight"] {
             background-color: #00BFFF !important;
         }
