@@ -52,10 +52,9 @@ st.markdown(
             padding-left: 5rem;
             padding-right: 5rem;
         }
-
         .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
-            border-bottom: 2px solid #00BFFF;
-            color: #00BFFF; /* Makes the active tab text blue */
+            border-bottom: 3px solid #00BFFF !important; 
+            color: #00BFFF;
         }
 
         .stTabs [data-baseweb="tab-list"] button[aria-selected="false"] {
