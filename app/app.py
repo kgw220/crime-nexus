@@ -111,8 +111,8 @@ with st.sidebar:
         "Use the Layer Control at the top right corner of the map to toggle layers on and off for"
         " better visibility on how crime is distributed in the city. Clusters highlight patterns "
         " with crime (with consideration with census and weather data), and hotspots highlight "
-        "areas that are statistically significant to have more crime. Data updates daily by 6PM "
-        "EST*."
+        "areas that are statistically significant to have more crime. *_Data updates daily by 6PM "
+        "EST*._*"
     )
     st.markdown("---")
     st.markdown("📊Date Ranges for Current Data📊")
@@ -124,10 +124,10 @@ with st.sidebar:
         f"{labeled_merged_df['dispatch_date'].max().strftime('%Y-%m-%d')}**"
     )
     st.markdown("---")
-    st.markdown("Data is updated with an automated daily script. However, there may be connection"
+    st.markdown("**Data is updated with an automated daily script. However, there may be connection"
                 " issues that lead to data not being updated on a given day. In this case, please"
                 " be patient and wait until the next day. In the case where data is several days "
-                "outdated, please raise an issue in the project repo.")
+                "outdated, please raise an issue in the project repo.*")
 
 # --- Main App UI ---
 tab1, tab2 = st.tabs(["Map Viewer", "Data Downloader"])
