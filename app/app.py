@@ -45,7 +45,6 @@ st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
-        /* This is your existing style for page padding */
         .block-container {
             padding-top: 5rem;
             padding-bottom: 3rem;
@@ -62,8 +61,11 @@ st.markdown(
         }
 
         .stTabs [data-baseweb="tab"] [aria-selected="true"]::after {
-        border-bottom: 2px solid #00BFFF !important; 
-     }
+            border-bottom: 2px solid #00BFFF !important; 
+        }
+        .stTabs [data-baseweb="tab-highlight"] {
+            background-color: #00BFFF !important;
+        }
     </style>
     """,
     unsafe_allow_html=True,
