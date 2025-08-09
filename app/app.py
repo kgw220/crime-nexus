@@ -41,6 +41,33 @@ FOLDER_PATH = "/crime_nexus"
 
 st.set_page_config(layout="wide")
 
+# Change tab color to blue instead of red
+st.markdown(
+    """
+    <style>
+    .stTabs [data-baseweb="tab-group"] > div:nth-child(1) > div {
+    background-color: blue !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Remove whitespace from sidebar
+st.markdown(
+    """
+        <style>
+               .block-container {
+                    padding-top: 5rem;
+                    padding-bottom: 3rem;
+                    padding-left: 5rem;
+                    padding-right: 5rem;
+                }
+        </style>
+        """,
+    unsafe_allow_html=True,
+)
+
 # --------------------------------------------------------------------------------------------------
 
 # Initialize the Dropbox client
@@ -60,21 +87,6 @@ if folder_meta:
 else:
     st.warning("Could not load the data. Please refresh the application and try again.")
     st.stop()
-
-# Remove whitespace from sidebar
-st.markdown(
-    """
-        <style>
-               .block-container {
-                    padding-top: 5rem;
-                    padding-bottom: 3rem;
-                    padding-left: 5rem;
-                    padding-right: 5rem;
-                }
-        </style>
-        """,
-    unsafe_allow_html=True,
-)
 
 with st.sidebar:
     st.markdown(
