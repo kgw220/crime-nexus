@@ -185,11 +185,12 @@ def main():
     print(final_merged_df.info())
     assert final_merged_df.isnull().sum().sum() == 0, "🚨DataFrame contains null values.🚨"
 
-    # Save just crime data from the latest date (END_DATE);
-    # NOTE: Ideally, I would use all the merged data, but there seems to be a ~3 day delay with the
-    # NOAA weather API (I receieve data from 7/24/25 on 7/27/25). This is not too important anyways,
-    # since this is used as a second layer over the final clusters.
-    yesterday_crime = crime_df[crime_df["dispatch_date"].dt.date == END_DATE]
+    # Save just crime data from the latest date
+    # NOTE: I use the "max" date instead of the END_DATE string, because the script runs on UTC
+    # time, and if I run it in the evening in EST/EDT time, UTC will be a day ahead, leading
+    # to no data for yesterday_crime
+    yesterday_date = crime_df["dispatch_date"].max()
+    yesterday_crime = crime_df[crime_df["dispatch_date"].dt.date == yesterday_date]
 
     print(f"<<<<< 📝Yesterday's recorded crimes:📝 >>>>>")
     print(f"There were {len(yesterday_crime)} recorded crimes!")
