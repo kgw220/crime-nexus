@@ -190,7 +190,7 @@ def main():
     # time, and if I run it in the evening in EST/EDT time, UTC will be a day ahead, leading
     # to no data for yesterday_crime
     yesterday_date = crime_df["dispatch_date"].max()
-    yesterday_crime = crime_df[crime_df["dispatch_date"].dt.date == yesterday_date]
+    yesterday_crime = crime_df[crime_df["dispatch_date"]== yesterday_date]
 
     print(f"<<<<< 📝Yesterday's recorded crimes:📝 >>>>>")
     print(f"There were {len(yesterday_crime)} recorded crimes!")
