@@ -37,7 +37,7 @@ DISTANCE_THRESHOLD = 1000
 # Folder path where data files are stored in Dropbox
 FOLDER_PATH = "/crime_nexus"
 
-st.set_page_config(layout="wide")
+st.set_page_config(page_title="Crime Nexus", layout="wide")
 
 # Add custom CSS to style the Streamlit app; blue tabs and custom padding
 st.markdown(
