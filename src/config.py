@@ -44,7 +44,7 @@ SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
     "min_dist": hp.uniform("min_dist", 0.0, 0.5),
     "n_components": hp.quniform("n_components", 5, 50, 1),
-    "min_cluster_size": hp.quniform("min_cluster_size", 3000, 6000, 500),
+    "min_cluster_size": hp.quniform("min_cluster_size", 1000, 5000, 250),
     "min_samples": hp.quniform("min_samples", 10, 200, 5),
 }
 
@@ -56,7 +56,7 @@ RUN_RETENTION_DAYS = 7
 # Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
 # lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
 # a paid tier.
-NUM_EXPERIMENT_EVALS = 20
+NUM_EXPERIMENT_EVALS = 30
 
 # Number of top High Quality clusters to keep
 HQ_CLUSTER_LIMIT = 10
