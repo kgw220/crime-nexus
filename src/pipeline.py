@@ -67,7 +67,7 @@ def main():
     """
     Main function to run the entire data pipeline from fetching to clustering.
     """
-    # Define date range to collect data (using a 2-year rolling window up to yesterday)
+    # Define date range to collect data (using a 1-year rolling window up to yesterday)
     END_DATE = (datetime.now() - timedelta(days=1)).date()
     START_DATE = END_DATE - timedelta(days=365 * YEARS_TO_COLLECT)
     START_STR = START_DATE.strftime("%Y-%m-%d")
