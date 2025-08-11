@@ -41,12 +41,7 @@ jobs:
 
       # Install the Python libraries listed in your requirements.txt file
       - name: Install Python dependencies
-        run: pip install numpy==1.26.4 -r requirements_actions.txt
-
-      # Create the 'data' directory if it doesn't already exist.
-      # The '-p' flag prevents errors if the directory is already there.
-      - name: Create data directory
-        run: mkdir -p data
+        run: pip install -r requirements_actions.txt
 
       # Execute the main Python pipeline script.
       - name: Run the data pipeline
