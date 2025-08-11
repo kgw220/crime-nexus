@@ -16,8 +16,8 @@ DROPBOX_APP_SECRET = os.getenv("DROPBOX_APP_SECRET")
 DROPBOX_REFRESH_TOKEN = os.getenv("DROPBOX_REFRESH_TOKEN")
 
 # Number of years of data to collect
-# NOTE: This is set to 2 years to keep the data size manageable and to ensure stability in streamlit
-YEARS_TO_COLLECT = 2
+# NOTE: This is set to a low number to keep the data size manageable and to ensure stability in streamlit
+YEARS_TO_COLLECT = 1
 
 # Data sources
 CARTO_URL = "https://phl.carto.com/api/v2/sql"
