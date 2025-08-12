@@ -78,7 +78,7 @@ if folder_meta:
     print(f"Current folder signature: {current_folder_signature}")
 
     with st.spinner("Updating the crime map with new data..."):
-        crime_df, hotspot_grid, merged_df, labeled_merged_df = load_dropbox_datasets(
+        crime_df, labeled_merged_df, hotspot_grid = load_dropbox_datasets(
             dbx, current_folder_signature, FOLDER_PATH
         )
 else:
