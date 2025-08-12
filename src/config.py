@@ -44,7 +44,7 @@ SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
     "min_dist": hp.uniform("min_dist", 0.0, 0.5),
     "n_components": hp.quniform("n_components", 5, 50, 1),
-    "min_cluster_size": hp.quniform("min_cluster_size", 2500, 5000, 250),
+    "min_cluster_size": hp.quniform("min_cluster_size", 2500, 4000, 250),
     "min_samples": hp.quniform("min_samples", 10, 200, 5),
 }
 
