@@ -39,6 +39,7 @@ def init_dropbox_client():
         app_key=st.secrets["DROPBOX_APP_KEY"],
         app_secret=st.secrets["DROPBOX_APP_SECRET"],
     )
+    
     return dbx
 
 
@@ -184,13 +185,12 @@ def load_dropbox_datasets(
 
     # Load each dataset
     crime_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "crime_")
-    hotspot_grid_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "hotspot_grid")
-    merged_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "merged_")
     labeled_merged_df = _load_dataset_dropbox(
         _dropbox_client, folder_path, filenames, "labeled_merged_"
     )
+    hotspot_grid_df = _load_dataset_dropbox(_dropbox_client, folder_path, filenames, "hotspot_grid")
 
-    return crime_df, hotspot_grid_df, merged_df, labeled_merged_df
+    return crime_df, labeled_merged_df, hotspot_grid_df
 
 
 # Define functions regarding mapping the data ------------------------------------------------------
