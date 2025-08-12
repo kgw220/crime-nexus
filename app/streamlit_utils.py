@@ -149,9 +149,8 @@ def load_dropbox_datasets(
     by a unique prefix, and returns them as separate DataFrames. The required
     file prefixes are:
         - "crime_"
-        - "hotspot_grid"
-        - "merged_"
         - "labeled_merged_"
+        - "hotspot_grid"
 
     Parameters:
     ----------
@@ -165,12 +164,11 @@ def load_dropbox_datasets(
 
     Returns:
     -------
-    Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]
+    Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]
         A tuple containing four DataFrames in the following order:
         1. Crime dataset
-        2. Hotspot grid dataset
-        3. Merged dataset
-        4. Labeled merged dataset
+        2. Labeled merged dataset
+        3. Hotspot grid dataset
 
     Raises:
     ------
