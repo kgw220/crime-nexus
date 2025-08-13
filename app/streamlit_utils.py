@@ -140,7 +140,7 @@ def _load_dataset_dropbox(
 @st.cache_data(show_spinner=False, ttl="30m")
 def load_dropbox_datasets(
     _dropbox_client: dropbox.Dropbox, folder_signature: str, folder_path: str = "/crime_nexus"
-) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+) -> Tuple[pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Load specific datasets from a Dropbox folder into four Pandas DataFrames or Geopandas
     GeoDataFrames.
