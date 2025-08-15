@@ -1,7 +1,9 @@
 """
 This script sets up the necessary configurations and constants for retrieving
-weather, crime, and census data. It includes API tokens, URLs for data sources, FIPS codes, the
-probability threshold for clustering, and the hyperparameter search space, among other things.
+weather, crime, and census data, as well as dimensionality reduction and
+clustering with UMAP/HDBSCAN, and finally, hotspot analysis. It includes 
+things like API tokens, URLs for data sources, FIPS codes, hyperparameter 
+search space, and other miscellaneous things to support the core functionality.
 """
 
 import os
@@ -16,7 +18,8 @@ DROPBOX_APP_SECRET = os.getenv("DROPBOX_APP_SECRET")
 DROPBOX_REFRESH_TOKEN = os.getenv("DROPBOX_REFRESH_TOKEN")
 
 # Number of years of data to collect
-# NOTE: This is set to a low number to keep the data size manageable and to ensure stability in streamlit
+# NOTE: This is set to a low number to keep the data size manageable and to ensure stability in 
+# streamlit
 YEARS_TO_COLLECT = 1
 
 # Data sources
@@ -44,7 +47,7 @@ SEARCH_SPACE = {
     "n_neighbors": hp.quniform("n_neighbors", 15, 150, 10),
     "min_dist": hp.uniform("min_dist", 0.0, 0.5),
     "n_components": hp.quniform("n_components", 5, 50, 1),
-    "min_cluster_size": hp.quniform("min_cluster_size", 3000, 5000, 500),
+    "min_cluster_size": hp.quniform("min_cluster_size", 4000, 6000, 250),
     "min_samples": hp.quniform("min_samples", 10, 200, 5),
 }
 
@@ -53,9 +56,9 @@ RUN_RETENTION_DAYS = 7
 
 # Set the number of evaluations the TPE algorithm will perform
 # NOTE: Ideally, this would be set higher, but each run takes some time, and GitHub
-# Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this number to be
-# lower to ensure the whole daily pipeline will run in <6 hours. This can be increased if I did have
-# a paid tier.
+# Actions (on the free tier) has a cap of 6 hours for the entire script, so I set this 
+# number to be lower to ensure the whole daily pipeline will run in <6 hours. This can 
+# be increased if I did have a paid tier.
 NUM_EXPERIMENT_EVALS = 50
 
 # Number of top High Quality clusters to keep
