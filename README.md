@@ -23,17 +23,21 @@ The pipeline automatically fetches raw crime, weather, and census data for Phila
 - Feature Creation: Calculating new features like population density.
 
 ### Clustering/Hotspot Analysis
-The merged dataset is fit with UMAP and DBSCAN to both reduce the dimensionality of the data, and then cluster the data This process involves:
+The merged dataset is fit with UMAP and HDBSCAN to both reduce the dimensionality of the data, and then cluster the data. This process involves:
 
 - Hyperparameter Optimization: Using a TPE algorithm to find the best clustering parameters with the help of MLFlow (I connect with my personal DataBricks workspace, where the runs are actually executed and recorded).
-- Clustering: Applying the best parameters to group crime data points into distinct clusters. I then subset to the clusters with the highest points of association (since I could end up displaying over 100 clusters depending on the daily data).
+- Clustering: Applying the best parameters to group crime data points into distinct clusters. I then subset to the clusters with the highest points of association (since I could end up displaying over 100 clusters depending on the daily data - This is a little cheating though, but it's what I chose to avoid severe overplotting).
 - Hotspot Analysis: Identifying areas with statistically significant crime activity.
 
 ### Mapping
 The processed data is then used to generate a rich, interactive map using the Folium library. The map includes several layers that can be toggled on and off:
-- Recent Crimes: Individual markers for the most recent crime incidents.
-- Cluster Outlines: Boundaries for each crime cluster, color-coded for easy identification.
-- Hotspots: Highlighted areas with high crime density.
+
+- Recent Crimes: One layer has individual markers for the most recent crime incidents. There is also another supplementary layer to aggregate the raw counts in larger regions, in case the user does not want to view all the individual recent crimes.
+- Clusters: One layer has boundaries for each crime cluster (to avoid having tens of thousands of individual crime plotted on the map), color-coded for easy identification. Another has a marker hovering over each cluster boundary to list some summary statistics with that cluster. Note that there will likely be days where crimes assigned to one
+cluster are distributed all over Philadephia - that's just the nature of the data (otherwise, crime would be easy to understand!).
+- Hotspots: A layer coloring areas with red for high crime density, and blue for low crime density.
+
+With these 3 main layers, one can view the most recent crime and see how it overlaps with pre-existing crime hotspots and clusters. The hotspots help to highlight statistically significant areas of high crime based on the raw coordinates, while the clusters take into account other aspects such as weather and census data of when/where the crime occured.
 
 ## App Features
 The app is hosted here: https://crime-nexus.streamlit.app/. A preview image of the app is at the top of this README.
