@@ -3,3 +3,4 @@ fileWatcherType = "none"
 
 [theme]
 base = "dark"
+primaryColor="#00BFFF" 
