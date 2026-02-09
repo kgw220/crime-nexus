@@ -24,8 +24,6 @@ from datetime import datetime, timedelta
 from dropbox.files import WriteMode
 from folium.plugins import MarkerCluster
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-# from pysal.explore import esda
-# from pysal.lib import weights
 from libpysal.weights import Queen
 from shapely.geometry import MultiPoint, Polygon
 from sklearn.cluster import DBSCAN
