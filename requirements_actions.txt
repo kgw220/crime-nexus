@@ -13,3 +13,4 @@ scikit-learn
 setuptools 
 umap-learn
 uuid
+esda
