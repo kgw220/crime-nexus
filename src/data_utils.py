@@ -9,6 +9,7 @@ import time
 import zipfile
 
 import dropbox
+import esda
 import folium
 import geopandas as gpd
 import hdbscan
@@ -17,15 +18,15 @@ import numpy as np
 import pandas as pd
 import requests
 import umap
-import dropbox
 
 from branca.element import Element
 from datetime import datetime, timedelta
 from dropbox.files import WriteMode
 from folium.plugins import MarkerCluster
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-from pysal.explore import esda
-from pysal.lib import weights
+# from pysal.explore import esda
+# from pysal.lib import weights
+from libpysal.weights import Queen
 from shapely.geometry import MultiPoint, Polygon
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
@@ -1098,7 +1099,7 @@ def find_hotspots(crime_df: pd.DataFrame, philly_gdf: gpd.GeoDataFrame) -> pd.Da
     analysis_grid = hotspot_grid[hotspot_grid["n_crimes"] > 0].copy()
 
     # Calculate the Gi* statistic (z-scores) only on cells with data
-    w = weights.Queen.from_dataframe(analysis_grid)
+    w = Queen.from_dataframe(analysis_grid)
     g_local = esda.G_Local(analysis_grid["n_crimes"].values, w)
 
     analysis_grid["z_score"] = g_local.Zs
