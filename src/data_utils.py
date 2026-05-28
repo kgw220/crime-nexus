@@ -71,12 +71,12 @@ def fetch_crime_data(
     # - location_block:  The street address of the incident, anonymized to the block level.
     # - lat:             The latitude coordinate for the incident location (aliased from point_y).
     # - lon:             The longitude coordinate for the incident location (aliased from point_x).
-    query = f"""
-        SELECT dc_dist, psa, dispatch_date, dispatch_time, hour, text_general_code, location_block,
-        point_y as lat, point_x as lon
-        FROM {table}
-        WHERE dispatch_date >= '{start_date}' AND dispatch_date <= '{end_date}'
-    """
+    query = (
+        f"SELECT dc_dist, psa, dispatch_date, dispatch_time, hour, text_general_code, location_block, "
+        f"point_y AS lat, point_x AS lon "
+        f"FROM {table} "
+        f"WHERE dispatch_date >= '{start_date}' AND dispatch_date <= '{end_date}'"
+    )
 
     # Connect to the OpenDataPhilly API and get the data, with logic to handle request errors
     response = None
